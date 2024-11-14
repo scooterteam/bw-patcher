@@ -25,11 +25,12 @@ from importlib import import_module
 from bwpatcher.modules import ALL_MODULES
 from bwpatcher.utils import SignatureException
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("model", help="Dev name of scooter.", type=str.lower, choices=ALL_MODULES)
 parser.add_argument("infile")
 parser.add_argument("outfile")
-parser.add_argument("patches", help="The patches that are to be applied.")
+parser.add_argument("patches", type=str, help="The patches that are to be applied.", choices=["rsls", "dms", "sld", "rfm", "chk"])
 args = parser.parse_args()
 
 with open(args.infile, 'rb') as fh:
