@@ -19,6 +19,7 @@ Currently, only the Mi4 is supported. The next models maybe soon.
 - chk (Fix Checksum) - update checksum for the patched bytes (only required by mi4pro2nd)
 
 # Usage
+## CLI
 ```bash
 python -m bwpatcher --help
 usage: __main__.py [-h] {mi4,mi4pro2nd,ultra4} infile outfile patches
@@ -33,6 +34,12 @@ positional arguments:
 
 options:
   -h, --help  show this help message and exit
+```
+
+## GUI
+```bash
+poetry install
+poetry run streamlit run app.py
 ```
 
 ### Examples
