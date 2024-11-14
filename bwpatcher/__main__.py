@@ -42,7 +42,9 @@ patcher = patcher_class(data)
 patches = {
     "rsls": patcher.remove_speed_limit_sport,
     "dms": patcher.dashboard_max_speed,
-    "sld": patcher.speed_limit_drive
+    "sld": patcher.speed_limit_drive,
+    "rfm": patcher.region_free,
+    "chk": patcher.fix_checksum,
 }
 
 for patch in args.patches.split(','):
