@@ -74,7 +74,7 @@ class Mi4pro2ndPatcher(CorePatcher):
         for i in range(7):
             ofs += 4
             pre = self.data[ofs:ofs+4]
-            post = bytes.fromhex("21030020")
+            post = b'\x21\x03\x00\x20'
             self.data[ofs:ofs+4] = post
             res += [(f"region_free_{i}", hex(ofs), pre.hex(), post.hex())]
 
@@ -88,9 +88,15 @@ class Mi4pro2ndPatcher(CorePatcher):
         return res
 
     def remove_speed_limit_sport(self):
-        sig = [0x9c, 0x02, 0xa1, 0x01, 0x0a, 0x02]
+        res = []
+
+        sig = [0x00, 0x00, 0xa1, 0x01, 0x0a, 0x02, 0xa1, 0x01]
         ofs = find_pattern(self.data, sig)
-        pre = self.data[ofs:ofs+1]
-        post = b'\xff'
-        self.data[ofs:ofs+1] = post
-        return ("remove_sls", hex(ofs), pre.hex(), post.hex())
+        post = b'\xff\x02'
+        for i in range(11):
+            ofs += 2
+            pre = self.data[ofs:ofs+2]
+            self.data[ofs:ofs+2] = post
+            res += [(f"remove_sls_{i}", hex(ofs), pre.hex(), post.hex())]
+
+        return res
