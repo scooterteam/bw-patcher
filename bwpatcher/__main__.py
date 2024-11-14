@@ -26,11 +26,19 @@ from bwpatcher.modules import ALL_MODULES
 from bwpatcher.utils import SignatureException
 
 
+patch_map = {
+    "rsls": lambda patcher: patcher.remove_speed_limit_sport,
+    "dms": lambda patcher: patcher.dashboard_max_speed,
+    "sld": lambda patcher: patcher.speed_limit_drive,
+    "rfm": lambda patcher: patcher.region_free,
+    "chk": lambda patcher: patcher.fix_checksum,
+}
+
 parser = argparse.ArgumentParser()
 parser.add_argument("model", help="Dev name of scooter.", type=str.lower, choices=ALL_MODULES)
 parser.add_argument("infile")
 parser.add_argument("outfile")
-parser.add_argument("patches", type=str, help="The patches that are to be applied.", choices=["rsls", "dms", "sld", "rfm", "chk"])
+parser.add_argument("patches", type=str, help="The patches that are to be applied. Choose from: " + ', '.join(patch_map.keys()))
 args = parser.parse_args()
 
 with open(args.infile, 'rb') as fh:
@@ -40,25 +48,18 @@ module = import_module(f"bwpatcher.modules.{args.model}")
 patcher_class = getattr(module, f"{args.model.capitalize()}Patcher")
 patcher = patcher_class(data)
 
-patches = {
-    "rsls": patcher.remove_speed_limit_sport,
-    "dms": patcher.dashboard_max_speed,
-    "sld": patcher.speed_limit_drive,
-    "rfm": patcher.region_free,
-    "chk": patcher.fix_checksum,
-}
-
 for patch in args.patches.split(','):
     value = None
     if '=' in patch:
         patch, value = patch.split('=')
         value = float(value)
-    if patch in patches:
+    if patch in patch_map:
         try:
             if value:
-                print(patches[patch](value))
+                res = patch_map[patch](patcher)(value)
             else:
-                print(patches[patch]())
+                res = patch_map[patch](patcher)()
+            print(res)
         except SignatureException:
             print(f"{patch.upper()} can't be applied")
 
