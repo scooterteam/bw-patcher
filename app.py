@@ -2,9 +2,18 @@ import streamlit as st
 from bwpatcher.utils import SignatureException
 from io import BytesIO
 from importlib import import_module
+import streamlit as st
+
+
+title = "Brightway Firmware Patcher"
+# Set the app title in the browser's tab
+st.set_page_config(
+    page_title=title,
+    page_icon="🛴"
+)
 
 # App title
-st.title('Brightway Firmware Patcher')
+st.title(title)
 
 # Description
 st.markdown("""
