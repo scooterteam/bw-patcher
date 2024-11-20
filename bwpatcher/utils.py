@@ -20,8 +20,53 @@
 
 # https://github.com/BotoX/xiaomi-m365-firmware-patcher/blob/master/patcher.py
 # Thx BotoX!
+
+from importlib import import_module
+
+
 class SignatureException(Exception):
     pass
+
+
+patch_map = {
+    "rsls": lambda patcher: patcher.remove_speed_limit_sport,
+    "dms": lambda patcher: patcher.dashboard_max_speed,
+    "sld": lambda patcher: patcher.speed_limit_drive,
+    "rfm": lambda patcher: patcher.region_free,
+    "fdv": lambda patcher: patcher.fake_drv_version,
+    "chk": lambda patcher: patcher.fix_checksum,
+}
+
+
+def patch_firmware(model: str, data: bytes, patches: list):
+    if model == "mi4pro2nd" and "chk" not in patches:
+        patches.append("chk")
+
+    module = import_module(f"bwpatcher.modules.{model}")
+    patcher_class = getattr(module, f"{model.capitalize()}Patcher")
+    patcher = patcher_class(data)
+
+    for patch in patches:
+        value = None
+        if '=' in patch:
+            patch, value = patch.split('=')
+            if patch != 'fdv':
+                value = float(value)
+
+        if patch in patch_map:
+            try:
+                if value:
+                    res = patch_map[patch](patcher)(value)
+                else:
+                    res = patch_map[patch](patcher)()
+                print(res)
+            except SignatureException:
+                print(f"{patch.upper()} can't be applied")
+        else:
+            print(f"{patch.upper()} doesn't exist")
+
+    output = patcher.data
+    return output
 
 
 def find_pattern(data, signature, mask=None, start=None, maxit=None):

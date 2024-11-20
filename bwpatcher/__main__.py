@@ -20,19 +20,9 @@
 
 import argparse
 
-from importlib import import_module
-
 from bwpatcher.modules import ALL_MODULES
-from bwpatcher.utils import SignatureException
+from bwpatcher.utils import patch_map, patch_firmware
 
-
-patch_map = {
-    "rsls": lambda patcher: patcher.remove_speed_limit_sport,
-    "dms": lambda patcher: patcher.dashboard_max_speed,
-    "sld": lambda patcher: patcher.speed_limit_drive,
-    "rfm": lambda patcher: patcher.region_free,
-    "chk": lambda patcher: patcher.fix_checksum,
-}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("model", help="Dev name of scooter.", type=str.lower, choices=ALL_MODULES)
@@ -44,27 +34,7 @@ args = parser.parse_args()
 with open(args.infile, 'rb') as fh:
     data = fh.read()
 
-module = import_module(f"bwpatcher.modules.{args.model}")
-patcher_class = getattr(module, f"{args.model.capitalize()}Patcher")
-patcher = patcher_class(data)
-
-for patch in args.patches.split(','):
-    value = None
-    if '=' in patch:
-        patch, value = patch.split('=')
-        value = float(value)
-    if patch in patch_map:
-        try:
-            if value:
-                res = patch_map[patch](patcher)(value)
-            else:
-                res = patch_map[patch](patcher)()
-            print(res)
-        except SignatureException:
-            print(f"{patch.upper()} can't be applied")
-
-    else:
-        print(f"{patch.upper()} doesn't exist")
+output_data = patch_firmware(args.model, data, args.patches.split(","))
 
 with open(args.outfile, 'wb') as fh:
-    fh.write(patcher.data)
+    fh.write(output_data)

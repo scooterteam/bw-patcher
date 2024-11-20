@@ -15,8 +15,9 @@ Currently, only the Mi4 is supported. The next models maybe soon.
 - rsls (Remove Speed Limit Sport) - removes the speed limiter on sport mode (technically sets it to a value that the scooter will never reach),
 - dms (Dashboard Max Speed) (from 1.0km/h to 29.6km/h) - spoofs the maximum speed reached by the scooter on the dashboard,
 - sld (Speed Limit Drive) (from 1.0km/h to 25.5km/h) - allows to change the maximum speed on Drive mode.
-- rfm (Region Free) - remove regional restrictions such as speed and acceleration nerf
-- chk (Fix Checksum) - update checksum for the patched bytes (only required by mi4pro2nd)
+- rfm (Region Free) - remove regional restrictions such as speed and acceleration nerf.
+- fdv (Fake DRV Version) - allows to change the DRV version. Can prevent unwanted updates.
+- chk (Fix Checksum) - update checksum for the patched bytes (only required by mi4pro2nd).
 
 # Usage
 ## CLI
@@ -29,7 +30,7 @@ positional arguments:
                         Dev name of scooter.
   infile
   outfile
-  {rsls,dms,sld,rfm,chk}
+  {rsls,dms,sld,rfm,fdv,chk}
                         The patches that are to be applied.
 
 options:

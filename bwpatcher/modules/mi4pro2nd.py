@@ -100,3 +100,6 @@ class Mi4pro2ndPatcher(CorePatcher):
             res += [(f"remove_sls_{i}", hex(ofs), pre.hex(), post.hex())]
 
         return res
+
+    def fake_drv_version(self, firmware_version: str):
+        raise NotImplementedError("Not implemented for 4Pro2nd")
