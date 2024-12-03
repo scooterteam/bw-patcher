@@ -18,9 +18,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-# https://github.com/BotoX/xiaomi-m365-firmware-patcher/blob/master/patcher.py
-# Thx BotoX!
-
 from importlib import import_module
 
 
@@ -39,7 +36,8 @@ patch_map = {
 
 
 def patch_firmware(model: str, data: bytes, patches: list):
-    if model == "mi4pro2nd" and "chk" not in patches:
+    # CHK patch must always come last for 4pro2nd
+    if model == "mi4pro2nd" and patches[-1] != "chk":
         patches.append("chk")
 
     module = import_module(f"bwpatcher.modules.{model}")
@@ -69,6 +67,8 @@ def patch_firmware(model: str, data: bytes, patches: list):
     return output
 
 
+# https://github.com/BotoX/xiaomi-m365-firmware-patcher/blob/master/patcher.py
+# Thx BotoX!
 def find_pattern(data, signature, mask=None, start=None, maxit=None):
     sig_len = len(signature)
     if start is None:
