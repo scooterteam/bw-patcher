@@ -17,6 +17,7 @@ Currently, only the Mi4 is supported. The next models maybe soon.
 - sld (Speed Limit Drive) (from 1.0km/h to 25.5km/h) - allows to change the maximum speed on Drive mode.
 - rfm (Region Free) - remove regional restrictions such as speed and acceleration nerf.
 - fdv (Fake DRV Version) - allows to change the DRV version. Can prevent unwanted updates.
+- mss (Motor Start Speed) - Minimum required speed before the motor will start.
 - chk (Fix Checksum) - update checksum for the patched bytes (only required by mi4pro2nd).
 
 # Usage
@@ -30,7 +31,7 @@ positional arguments:
                         Dev name of scooter.
   infile
   outfile
-  {rsls,dms,sld,rfm,fdv,chk}
+  {rsls,dms,sld,rfm,fdv,mss,chk}
                         The patches that are to be applied.
 
 options:

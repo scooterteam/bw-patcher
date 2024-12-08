@@ -54,6 +54,11 @@ if scooter_model != "mi4pro2nd":
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         patches.append(f"fdv={fdv_version}")
 
+if scooter_model == "ultra4":
+    if st.checkbox('Motor Start Speed (MSS)'):
+        mss_speed = st.slider("Motor Start Speed (MSS)", 1, 9, 6)
+        patches.append(f"mss={mss_speed}")
+
 
 # Process and download
 if uploaded_file is not None and patches:
