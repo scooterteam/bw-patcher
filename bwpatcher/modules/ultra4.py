@@ -45,3 +45,25 @@ class Ultra4Patcher(CorePatcher):
         pre = self.data[ofs:ofs+len(post_if)]
         self.data[ofs:ofs+len(post_if)] = post_if
         return [("dashboard_max_speed", hex(ofs), pre.hex(), post_if.hex())]
+
+    def motor_start_speed(self, speed: int):
+        assert 1 <= speed <= 9, "Speed must be between 1 and 9km/h"
+        kmh = round(-0.36*speed**2-5.39*speed+68.6)*3
+
+        sig = [0x16, 0xE0, None, 0x88, 0x49, None, None, 0x00, None, 0x42, 0x11, 0xD2]
+        ofs = find_pattern(self.data, sig) + 4
+
+        b = self.data[ofs+1]
+        if b == 0x25:  # 0015
+            reg = 5
+        elif b == 0x26:  # 0016, 0017 etc.
+            reg = 6
+        else:
+            raise Exception(f"Invalid firmware file: {hex(b)}")
+
+        post = self.assembly(f"movs r{reg}, #{kmh}")
+        assert len(post) == 2, "wrong length of post bytes"
+        pre = self.data[ofs:ofs+2]
+        self.data[ofs:ofs+2] = post
+        return [("motor_start_speed", hex(ofs), pre.hex(), post.hex())]
+

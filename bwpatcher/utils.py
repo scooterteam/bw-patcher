@@ -32,6 +32,7 @@ patch_map = {
     "rfm": lambda patcher: patcher.region_free,
     "fdv": lambda patcher: patcher.fake_drv_version,
     "chk": lambda patcher: patcher.fix_checksum,
+    "mss": lambda patcher: patcher.motor_start_speed,
 }
 
 

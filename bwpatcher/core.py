@@ -58,3 +58,7 @@ class CorePatcher():
         post = firmware_version.encode("ascii")
         self.data[ofs:ofs+4] = post
         return [("fake_drv_version", hex(ofs), pre.hex(), post.hex())]
+
+    def motor_start_speed(self, speed: int):
+        raise NotImplementedError()
+
