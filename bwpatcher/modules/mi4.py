@@ -48,11 +48,11 @@ class Mi4Patcher(CorePatcher):
     def speed_limit_drive(self, kmh: float):
         assert 1.0 <= kmh <= 25.5, "Speed must be between 1.0 and 25.5km/h"
         speed = int(kmh*10)
-        sig = [0x2C, 0x49, 0x41, 0x84, 0x49, 0x10, 0x01, 0x84]
-        ofs = find_pattern(self.data, sig) + 0xC
+        sig = [0xCA, 0x24, 0x04, 0x80, None, 0x4D, 0xB9, 0x21, 0xC5, 0x80]
+        ofs = find_pattern(self.data, sig)
 
         pre = self.data[ofs:ofs+2]
-        post = bytes(self.assembly(f'MOVS R4, #{speed}')[0])
+        post = bytes(self.assembly(f'MOVS R4, #{speed}'))
         self.data[ofs:ofs+2] = post
         return [("speed_limit_drive", hex(ofs), pre.hex(), post.hex())]
 
