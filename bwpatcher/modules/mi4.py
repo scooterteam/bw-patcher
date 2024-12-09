@@ -39,7 +39,7 @@ class Mi4Patcher(CorePatcher):
         BCS 10
         MOVS R0, R1
         """
-        post_if = bytes(self.ks.asm(if_asm)[0])
+        post_if = self.assembly(if_asm)
         assert len(post_if) == 10, "wrong length of post bytes"
         pre = self.data[ofs:ofs+len(post_if)]
         self.data[ofs:ofs+len(post_if)] = post_if
@@ -52,7 +52,7 @@ class Mi4Patcher(CorePatcher):
         ofs = find_pattern(self.data, sig)
 
         pre = self.data[ofs:ofs+2]
-        post = bytes(self.assembly(f'MOVS R4, #{speed}'))
+        post = self.assembly(f'MOVS R4, #{speed}')
         self.data[ofs:ofs+2] = post
         return [("speed_limit_drive", hex(ofs), pre.hex(), post.hex())]
 
@@ -77,7 +77,7 @@ class Mi4Patcher(CorePatcher):
         movs r0, #0xa
         NOP
         """
-        post = bytes(self.ks.asm(patch_asm)[0])
+        post = self.assembly(patch_asm)
         assert len(post) == 40, "wrong length of post bytes"
         pre = self.data[ofs:ofs+len(post)]
         self.data[ofs:ofs+len(post)] = post
