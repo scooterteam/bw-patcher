@@ -70,4 +70,4 @@ python -m bwpatcher mi4pro2nd mcu_update.bin patched_mcu_update.bin rfm,rsls,chk
 Important: CHK must always come last!
 
 ## License
-Licensed under AGPLv3, see [LICENSE.md](LICENSE.md).
+Licensed under AGPLv3, see [LICENSE](LICENSE).
