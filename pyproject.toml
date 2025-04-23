@@ -3,7 +3,7 @@ name = "bwpatcher"
 version = "0.1.0"
 description = ""
 authors = ["scooterteam <scooterteam@proton.me>"]
-license = "GNU AGPL Version 3"
+license = "CC BY-NC-SA 4.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
