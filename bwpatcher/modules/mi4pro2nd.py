@@ -49,6 +49,10 @@ class Mi4pro2ndPatcher(CorePatcher):
             chk = checksum(chk, data[i])
         return chk.to_bytes(2, byteorder='big')
 
+    @classmethod
+    def __calc_speed(cls, speed, factor=20.9):
+        return int(factor * speed).to_bytes(2, 'little')
+
     def fix_checksum(self):
         sig = 'SZMC-ES-ZM-0283M'.encode()
         ofs = find_pattern(self.data, sig) + 0x20
@@ -87,19 +91,36 @@ class Mi4pro2ndPatcher(CorePatcher):
 
         return res
 
-    def remove_speed_limit_sport(self):
+    def speed_limit_drive(self, speed):
         res = []
 
-        sig = [0x00, 0x00, 0xa1, 0x01, 0x0a, 0x02, 0xa1, 0x01]
+        sig = [0x38, 0x00, 0x39, 0x01, 0xA1, 0x01, 0x39, 0x01, 0x39]
         ofs = find_pattern(self.data, sig)
-        post = b'\xff\x02'
+        post = self.__calc_speed(speed)
         for i in range(11):
             ofs += 2
             pre = self.data[ofs:ofs+2]
             self.data[ofs:ofs+2] = post
-            res += [(f"remove_sls_{i}", hex(ofs), pre.hex(), post.hex())]
+            res += [(f"sld_{i}", hex(ofs), pre.hex(), post.hex())]
 
         return res
+
+    def speed_limit_sport(self, speed):
+        res = []
+
+        sig = [0x00, 0x00, 0xa1, 0x01, 0x0a, 0x02, 0xa1, 0x01]
+        ofs = find_pattern(self.data, sig)
+        post = self.__calc_speed(speed)
+        for i in range(11):
+            ofs += 2
+            pre = self.data[ofs:ofs+2]
+            self.data[ofs:ofs+2] = post
+            res += [(f"sls_{i}", hex(ofs), pre.hex(), post.hex())]
+
+        return res
+
+    def remove_speed_limit_sport(self):
+        return self.speed_limit_sport(speed=36.7)
 
     def fake_drv_version(self, firmware_version: str):
         raise NotImplementedError("Not implemented for 4Pro2nd")

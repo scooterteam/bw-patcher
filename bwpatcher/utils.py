@@ -29,6 +29,7 @@ patch_map = {
     "rsls": lambda patcher: patcher.remove_speed_limit_sport,
     "dms": lambda patcher: patcher.dashboard_max_speed,
     "sld": lambda patcher: patcher.speed_limit_drive,
+    "sls": lambda patcher: patcher.speed_limit_sport,
     "rfm": lambda patcher: patcher.region_free,
     "fdv": lambda patcher: patcher.fake_drv_version,
     "chk": lambda patcher: patcher.fix_checksum,

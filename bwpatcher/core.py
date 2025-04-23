@@ -37,6 +37,9 @@ class CorePatcher():
     def speed_limit_drive(self, kmh: float):
         raise NotImplementedError()
 
+    def speed_limit_sport(self, kmh: float):
+        raise NotImplementedError()
+
     def remove_speed_limit_sport(self):
         raise NotImplementedError()
 

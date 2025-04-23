@@ -35,15 +35,20 @@ if scooter_model in ['mi4', 'mi4pro2nd']:
     if st.checkbox('Remove Speed Limit Sport (RSLS)'):
         patches.append('rsls')
 
+if scooter_model in ['mi4pro2nd']:
+    if st.checkbox('Speed Limit Sport (SLS)'):
+        sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5)
+        patches.append(f'sls={sls_speed}')
+
+if scooter_model in ['mi4', 'mi4pro2nd']:
+    if st.checkbox('Speed Limit Drive (SLD)'):
+        sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5)
+        patches.append(f'sld={sld_speed}')
+
 if scooter_model in ['mi4', 'ultra4']:
     if st.checkbox('Dashboard Max Speed (DMS)'):
         dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0)
         patches.append(f'dms={dms_speed}')
-
-if scooter_model in ['mi4']:
-    if st.checkbox('Speed Limit Drive (SLD)'):
-        sld_speed = st.slider("Max Speed (SLD)", 1.0, 25.5, 25.5)
-        patches.append(f'sld={sld_speed}')
 
 if scooter_model in ['mi4pro2nd']:
     if st.checkbox('Region-Free (RFM)'):
