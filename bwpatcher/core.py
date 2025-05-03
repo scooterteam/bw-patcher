@@ -19,6 +19,7 @@
 #
 
 import keystone
+import capstone
 
 from bwpatcher.utils import find_pattern
 
@@ -27,9 +28,17 @@ class CorePatcher():
     def __init__(self, data):
         self.data = bytearray(data)
         self.ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_THUMB)
+        self.cs = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB | capstone.CS_MODE_LITTLE_ENDIAN)
 
     def assembly(self, code):
         return bytes(self.ks.asm(code)[0])
+
+    def disassembly(self, code_bytes: bytes):
+        """Disassemble bytes and return code"""
+        instructions = []
+        for insn in self.cs.disasm(code_bytes, 0):
+            instructions.append(f"{insn.mnemonic}\t{insn.op_str}")
+        return "\n".join(instructions)
 
     def dashboard_max_speed(self, speed: float):
         raise NotImplementedError()
@@ -64,4 +73,3 @@ class CorePatcher():
 
     def motor_start_speed(self, speed: int):
         raise NotImplementedError()
-
