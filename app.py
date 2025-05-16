@@ -25,22 +25,23 @@ uploaded_file = st.file_uploader("Choose a firmware file...", type=["bin"])
 
 # Select scooter model
 st.subheader('Select Scooter Model')
-scooter_model = st.selectbox('Choose the model of your scooter', ['mi4', 'mi4pro2nd', 'ultra4'])
+models = ['mi4', 'mi4pro2nd', 'ultra4', 'mi5pro', 'mi5', 'mi5max']
+scooter_model = st.selectbox('Choose the model of your scooter', models)
 
 # Choose patches to apply
 st.subheader('Select Patches')
 patches = []
 
-if scooter_model in ['mi4', 'mi4pro2nd']:
+if scooter_model in ['mi4']:
     if st.checkbox('Remove Speed Limit Sport (RSLS)'):
         patches.append('rsls')
 
-if scooter_model in ['mi4pro2nd']:
+if scooter_model in ['mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
     if st.checkbox('Speed Limit Sport (SLS)'):
         sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
         patches.append(f'sls={sls_speed}')
 
-if scooter_model in ['mi4', 'mi4pro2nd']:
+if scooter_model in ['mi4', 'mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
     if st.checkbox('Speed Limit Drive (SLD)'):
         sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
         patches.append(f'sld={sld_speed}')
@@ -50,7 +51,7 @@ if scooter_model in ['mi4', 'ultra4']:
         dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0, 0.1)
         patches.append(f'dms={dms_speed}')
 
-if scooter_model in ['mi4pro2nd']:
+if scooter_model in ['mi4pro2nd', 'mi5pro']:
     if st.checkbox('Region-Free (RFM)'):
         patches.append('rfm')
 
