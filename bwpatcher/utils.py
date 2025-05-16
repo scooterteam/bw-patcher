@@ -18,6 +18,9 @@
 # - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
 #
 
+import shutil
+import traceback
+
 from importlib import import_module
 
 
@@ -37,11 +40,12 @@ patch_map = {
 }
 
 
-def patch_firmware(model: str, data: bytes, patches: list):
+def patch_firmware(model: str, data: bytes, patches: list, web: bool = False):
     # CHK patch must always come last for 4pro2nd
     if model == "mi4pro2nd" and patches[-1] != "chk":
         patches.append("chk")
 
+    errors = []
     module = import_module(f"bwpatcher.modules.{model}")
     patcher_class = getattr(module, f"{model.capitalize()}Patcher")
     patcher = patcher_class(data)
@@ -60,10 +64,25 @@ def patch_firmware(model: str, data: bytes, patches: list):
                 else:
                     res = patch_map[patch](patcher)()
                 print(res)
-            except SignatureException:
-                print(f"{patch.upper()} can't be applied")
+            except Exception as e:
+                if web:
+                    raise e
+                else:
+                    errors.append((patch, e))
         else:
-            print(f"{patch.upper()} doesn't exist")
+            errors.append((patch, "The specified patch doesn't exist."))
+
+    if errors:
+        width = shutil.get_terminal_size(fallback=(80,24)).columns // 3
+        for patch, error in errors:
+            msg = f"ERROR: {patch} "
+            print(f"{msg}{'-'*(width - len(msg))}")
+            traceback.print_exception(type(error), error, error.__traceback__)
+
+        print("-" * width)
+
+        for patch, _ in errors:
+            print(f"Failed to use the {patch} patch. Check the logs.")
 
     output = patcher.data
     return output
