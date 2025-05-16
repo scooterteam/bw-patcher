@@ -72,7 +72,7 @@ if uploaded_file is not None and patches:
     input_firmware = uploaded_file.read()
 
     # Apply the selected patches
-    patched_firmware = patch_firmware(scooter_model, input_firmware, patches, True)
+    patched_firmware = patch_firmware(scooter_model, input_firmware, patches)
     st.success("Patching complete!")
 
     # Provide the user with a link to download the patched firmware
