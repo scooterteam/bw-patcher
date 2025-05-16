@@ -37,17 +37,17 @@ if scooter_model in ['mi4', 'mi4pro2nd']:
 
 if scooter_model in ['mi4pro2nd']:
     if st.checkbox('Speed Limit Sport (SLS)'):
-        sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5)
+        sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
         patches.append(f'sls={sls_speed}')
 
 if scooter_model in ['mi4', 'mi4pro2nd']:
     if st.checkbox('Speed Limit Drive (SLD)'):
-        sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5)
+        sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
         patches.append(f'sld={sld_speed}')
 
 if scooter_model in ['mi4', 'ultra4']:
     if st.checkbox('Dashboard Max Speed (DMS)'):
-        dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0)
+        dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0, 0.1)
         patches.append(f'dms={dms_speed}')
 
 if scooter_model in ['mi4pro2nd']:
@@ -61,7 +61,7 @@ if scooter_model != "mi4pro2nd":
 
 if scooter_model == "ultra4":
     if st.checkbox('Motor Start Speed (MSS)'):
-        mss_speed = st.slider("Motor Start Speed (MSS)", 1, 9, 6)
+        mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
         patches.append(f"mss={mss_speed}")
 
 
@@ -71,7 +71,7 @@ if uploaded_file is not None and patches:
     input_firmware = uploaded_file.read()
 
     # Apply the selected patches
-    patched_firmware = patch_firmware(scooter_model, input_firmware, patches)
+    patched_firmware = patch_firmware(scooter_model, input_firmware, patches, True)
     st.success("Patching complete!")
 
     # Provide the user with a link to download the patched firmware
