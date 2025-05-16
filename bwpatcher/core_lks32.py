@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+#! -*- coding: utf-8 -*-
+#
+# BW Patcher
+# Copyright (C) 2024-2025 ScooterTeam
+#
+# This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+# To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/
+# or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+#
+# You are free to:
+# - Share — copy and redistribute the material in any medium or format
+# - Adapt — remix, transform, and build upon the material
+#
+# Under the following terms:
+# - Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+# - NonCommercial — You may not use the material for commercial purposes.
+# - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+#
+
+import math
+
+from bwpatcher.core import CorePatcher
+from bwpatcher.utils import find_pattern, SignatureException
+
+
+class LKS32MC07Patcher(CorePatcher):
+    def __init__(self, data):
+        super().__init__(data)
+
+    def _speed_limits_fix(self):
+        ret = []
+        sig = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42]
+        sig_dst = [0xF5, 0x31, 0x41, 0x81, 0x70, 0xBD]
+
+        ofs = find_pattern(self.data, sig) + len(sig)
+        try:
+            # jump to the end of the function
+            ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
+            pre = self.data[ofs:ofs+2]
+            post = self.assembly(f"b {ofs_dst-ofs}")
+            self.data[ofs:ofs+2] = post
+            ret.append(("speed_limits_fix", hex(ofs), pre.hex(), post.hex()))
+
+            # NOP unnecessary code, making space for 4-bytes speed limit values
+            ofs += 2
+            nop_size = ofs_dst - ofs
+            assert nop_size % 2 == 0, "Odd size of the space needed."
+
+            pre = self.data[ofs:ofs+nop_size]
+            post = self.assembly(f"nop") * (nop_size//2)
+            assert len(pre) == len(post), "Wrong length of post bytes"
+
+            self.data[ofs:ofs+nop_size] = post
+            ret.append(("speed_limits_fix_nop", hex(ofs), pre.hex(), post.hex()))
+        except SignatureException:
+            # verify if the patch has already been used
+            # otherwise the function will raise a SignatureException
+            sig_dst = [0x00, 0xBF, 0x00, 0xBF, 0x70, 0xBD]
+            ofs_dst = find_pattern(self.data, sig_dst, start=ofs)
+
+        return ret
+
+    @staticmethod
+    def _safe_ldr(ldr_offset: int, dst_ofs: int) -> tuple[int, int]:
+        pc_base = (ldr_offset & ~0x3) + 4
+        min_off = dst_ofs - pc_base
+        if min_off < 0:
+            raise ValueError("Minimum destination offset is earlier than PC_base")
+        if min_off % 4 != 0:
+            min_off = (min_off & ~0x3) + 4
+
+        ldr_ofs_val = int(math.ceil(min_off / 4.0))
+        return pc_base + (ldr_ofs_val * 4), min_off
+
+    def speed_limit_drive(self, kmh: float):
+        ret = [self._speed_limits_fix()]
+        sig = [None, 0x49, 0x41, 0x82, 0xcb, 0x25, 0x05, 0x80]
+        sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
+
+        ofs = find_pattern(self.data, sig) + 4
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst)
+
+        speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
+        speed = int(kmh*10).to_bytes(4, byteorder='little')
+        pre = self.data[speed_ofs:speed_ofs+4]
+        self.data[speed_ofs:speed_ofs+4] = speed
+        ret.append(("speed_limit_drive_value", hex(speed_ofs), pre.hex(), speed.hex()))
+
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly(f"ldr r5,[pc, #{ldr_ofs}]")
+        assert len(post) == 2, "Wrong length of post bytes"
+        self.data[ofs:ofs+2] = post
+        ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
+        return ret
+
+    def speed_limit_sport(self, kmh: float):
+        ret = [self._speed_limits_fix()]
+        sig = [0xfd, 0x21, 0x41, 0x80, None, 0x49, 0x81, 0x61]
+        sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
+
+        ofs = find_pattern(self.data, sig)
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst) + 4
+
+        speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
+        speed = int(kmh*10).to_bytes(4, byteorder='little')
+        pre = self.data[speed_ofs:speed_ofs+4]
+        self.data[speed_ofs:speed_ofs+4] = speed
+        ret.append(("speed_limit_sport_value", hex(speed_ofs), pre.hex(), speed.hex()))
+
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")
+        assert len(post) == 2, "Wrong length of post bytes"
+        self.data[ofs:ofs+2] = post
+        ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
+        return ret
+
+    def remove_speed_limit_sport(self):
+        return self.speed_limit_sport(kmh=36.7)
