@@ -58,7 +58,7 @@ class Mi5proPatcher(ES32Patcher):
         sig = [ 0x00, 0x88, 0x09, 0xb2, 0x81, 0x42, 0x00, 0xdd, 0xa0, 0x82 ]
         ofs = find_pattern(self.data, sig)
         pre = self.data[ofs:ofs+len(sig)]
-        post = self.assembly("\n".join(["nop"] * (len(sig) // 2)))
+        post = self.assembly("nop") * (len(sig) // 2)
         assert len(pre) == len(post)
         self.data[ofs:ofs+len(sig)] = post
 
