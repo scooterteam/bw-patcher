@@ -89,6 +89,7 @@ class LKS32MC07Patcher(CorePatcher):
 
         pre = self.data[ofs:ofs+2]
         post = self.assembly(f"ldr r5,[pc, #{ldr_ofs}]")
+        assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs+2] = post
         ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
         return ret
@@ -109,6 +110,7 @@ class LKS32MC07Patcher(CorePatcher):
 
         pre = self.data[ofs:ofs+2]
         post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")
+        assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs+2] = post
         ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
         return ret
