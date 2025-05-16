@@ -18,57 +18,13 @@
 # - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
 #
 
-from bwpatcher.core import CorePatcher
+from bwpatcher.core_es32 import ES32Patcher
 from bwpatcher.utils import find_pattern
 
 
-class Mi4pro2ndPatcher(CorePatcher):
-    CHK_CONST = 0x1021
-
+class Mi4pro2ndPatcher(ES32Patcher):
     def __init__(self, data):
         super().__init__(data)
-
-    @classmethod
-    def __compute_checksum(cls, data, offset, size):
-        def checksum(param_1: int, param_2: int) -> int:
-            param_1 = (param_2 << 8) ^ param_1
-            for _ in range(8):
-                if (param_1 & 0x8000) != 0:
-                    param_1 = (param_1 << 1) ^ cls.CHK_CONST
-                else:
-                    param_1 = param_1 << 1
-                param_1 &= 0xFFFF
-            return param_1
-
-        data = data[offset:]
-        if size > len(data):
-            raise Exception("Error: File is shorter than expected range.")
-
-        chk = 0
-        for i in range(0, size):
-            chk = checksum(chk, data[i])
-        return chk.to_bytes(2, byteorder='big')
-
-    @classmethod
-    def __calc_speed(cls, speed, factor=20.9):
-        return int(factor * speed).to_bytes(2, 'little')
-
-    def fix_checksum(self):
-        sig = 'SZMC-ES-ZM-0283M'.encode()
-        ofs = find_pattern(self.data, sig) + 0x20
-        size = int.from_bytes(
-            self.data[ofs-0x2a:ofs-0x28],
-            byteorder='big'
-        )
-        pre = self.data[ofs:ofs+2]
-        post = self.__compute_checksum(
-            self.data,
-            offset=ofs+0x50,
-            size=size
-        )
-        self.data[ofs:ofs+2] = post[:2]
-
-        return ("fix_checksum", hex(ofs), pre.hex(), post.hex())
 
     def region_free(self):
         res = []
@@ -96,12 +52,12 @@ class Mi4pro2ndPatcher(CorePatcher):
 
         sig = [0x38, 0x00, 0x39, 0x01, 0xA1, 0x01, 0x39, 0x01, 0x39]
         ofs = find_pattern(self.data, sig)
-        post = self.__calc_speed(speed)
+        post = self._calc_speed(speed)
         for i in range(11):
             ofs += 2
             pre = self.data[ofs:ofs+2]
             self.data[ofs:ofs+2] = post
-            res += [(f"sld_{i}", hex(ofs), pre.hex(), post.hex())]
+            res += [(f"speed_limit_drive_{i}", hex(ofs), pre.hex(), post.hex())]
 
         return res
 
@@ -110,12 +66,12 @@ class Mi4pro2ndPatcher(CorePatcher):
 
         sig = [0x00, 0x00, 0xa1, 0x01, 0x0a, 0x02, 0xa1, 0x01]
         ofs = find_pattern(self.data, sig)
-        post = self.__calc_speed(speed)
+        post = self._calc_speed(speed)
         for i in range(11):
             ofs += 2
             pre = self.data[ofs:ofs+2]
             self.data[ofs:ofs+2] = post
-            res += [(f"sls_{i}", hex(ofs), pre.hex(), post.hex())]
+            res += [(f"speed_limit_sport_{i}", hex(ofs), pre.hex(), post.hex())]
 
         return res
 

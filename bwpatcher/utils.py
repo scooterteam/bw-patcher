@@ -22,6 +22,7 @@ import shutil
 import traceback
 
 from importlib import import_module
+import re
 
 
 class SignatureException(Exception):
@@ -40,9 +41,9 @@ patch_map = {
 }
 
 
-def patch_firmware(model: str, data: bytes, patches: list, web: bool = False):
-    # CHK patch must always come last for 4pro2nd
-    if model == "mi4pro2nd" and patches[-1] != "chk":
+def patch_firmware(model: str, data: bytes, patches: list):
+    # CHK patch must always come last for scooters based on the ES32 MCU (4pro2nd and 5pro)
+    if model in ["mi4pro2nd", "mi5pro"] and patches[-1] != "chk":
         patches.append("chk")
 
     errors = []
@@ -112,3 +113,18 @@ def find_pattern(data, signature, mask=None, start=None, maxit=None):
                 return i
 
     raise SignatureException('Pattern not found!')
+
+
+def extract_ldr_offset(instruction: str) -> int:
+    """Extract the offset number from an LDR instruction like 'ldr r1, [pc, #0x1dc]'"""
+    match = re.search(r'\[pc,\s*#(0x[0-9a-fA-F]+)\]', instruction)
+    if match:
+        return int(match.group(1), 16)
+    return None
+
+def offset_to_nearest_word(ofs):
+    rem = -1
+    while rem != 0:
+        ofs += 2
+        rem = ofs % 4
+    return ofs
