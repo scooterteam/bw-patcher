@@ -25,7 +25,7 @@ from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern, SignatureException
 
 
-class LKS32MC07Patcher(CorePatcher):
+class LKS32Patcher(CorePatcher):
     def __init__(self, data):
         super().__init__(data)
 
