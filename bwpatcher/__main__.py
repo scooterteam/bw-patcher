@@ -34,7 +34,7 @@ args = parser.parse_args()
 with open(args.infile, 'rb') as fh:
     data = fh.read()
 
-output_data = patch_firmware(args.model, data, args.patches.split(","))
+output_data = patch_firmware(args.model, data, args.patches.split(","), web=False)
 
 with open(args.outfile, 'wb') as fh:
     fh.write(output_data)

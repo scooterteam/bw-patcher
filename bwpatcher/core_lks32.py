@@ -19,6 +19,7 @@
 #
 
 import math
+import crcmod
 
 from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern, SignatureException
@@ -73,6 +74,23 @@ class LKS32MC07Patcher(CorePatcher):
         ldr_ofs_val = int(math.ceil(min_off / 4.0))
         return pc_base + (ldr_ofs_val * 4), min_off
 
+    @classmethod
+    def __compute_checksum(cls, data, offset, size):
+        if size > len(data):
+            raise Exception("Error: File is shorter than expected range.")
+
+        data = data[offset:offset+size]
+
+        # pad with 0xFF to make data length a multiple of 4
+        pad_len = (-len(data)) % 4
+        padded = data + b'\xFF' * pad_len
+
+        # create a CRC-32 function to simulate hardware CRC unit
+        crc_func = crcmod.mkCrcFun(0x104C11DB7, initCrc=0xFFFFFFFF, rev=False)
+
+        chk = crc_func(padded) & 0xFFFFFFFF
+        return chk.to_bytes(4, byteorder='little')
+
     def speed_limit_drive(self, kmh: float):
         ret = [self._speed_limits_fix()]
         sig = [None, 0x49, 0x41, 0x82, 0xcb, 0x25, 0x05, 0x80]
@@ -117,3 +135,20 @@ class LKS32MC07Patcher(CorePatcher):
 
     def remove_speed_limit_sport(self):
         return self.speed_limit_sport(kmh=36.7)
+
+    def fix_checksum(self):
+        sig = 'LKS32MC0'.encode()
+        ofs = find_pattern(self.data, sig) - 0x8
+        size = int.from_bytes(
+            self.data[ofs:ofs+4],
+            byteorder='little'
+        )
+        pre = self.data[ofs+4:ofs+8]
+        post = self.__compute_checksum(
+            self.data,
+            offset=ofs+0x18,
+            size=size
+        )
+        self.data[ofs+4:ofs+8] = post
+
+        return ("fix_checksum", hex(ofs), pre.hex(), post.hex())

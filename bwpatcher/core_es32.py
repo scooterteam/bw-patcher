@@ -18,34 +18,24 @@
 # - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
 #
 
+import crcmod
+
 from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern
 
 class ES32Patcher(CorePatcher):
-    CHK_CONST = 0x1021
-
     def __init__(self, data):
         super().__init__(data)
 
     @classmethod
     def __compute_checksum(cls, data, offset, size):
-        def checksum(param_1: int, param_2: int) -> int:
-            param_1 = (param_2 << 8) ^ param_1
-            for _ in range(8):
-                if (param_1 & 0x8000) != 0:
-                    param_1 = (param_1 << 1) ^ cls.CHK_CONST
-                else:
-                    param_1 = param_1 << 1
-                param_1 &= 0xFFFF
-            return param_1
-
-        data = data[offset:]
         if size > len(data):
             raise Exception("Error: File is shorter than expected range.")
 
-        chk = 0
-        for i in range(0, size):
-            chk = checksum(chk, data[i])
+        data = data[offset:offset+size]
+        chk = crcmod.mkCrcFun(poly=0x11021, initCrc=0, rev=False, xorOut=0)(data)
+        # alternative: chk = binascii.crc_hqx(data, 0)
+
         return chk.to_bytes(2, byteorder='big')
 
     @classmethod

@@ -41,9 +41,9 @@ patch_map = {
 }
 
 
-def patch_firmware(model: str, data: bytes, patches: list):
+def patch_firmware(model: str, data: bytes, patches: list, web=True):
     # CHK patch must always come last for scooters based on the ES32 MCU (4pro2nd and 5pro)
-    if model in ["mi4pro2nd", "mi5pro"] and patches[-1] != "chk":
+    if model in ["mi4pro2nd", "mi5pro", "mi5", "mi5max"] and patches[-1] != "chk":
         patches.append("chk")
 
     errors = []
