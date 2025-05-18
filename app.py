@@ -55,7 +55,7 @@ if scooter_model in ['mi4pro2nd', 'mi5pro']:
     if st.checkbox('Region-Free (RFM)'):
         patches.append('rfm')
 
-if scooter_model not in ["mi4pro2nd", "5pro"]:
+if scooter_model not in ["mi4pro2nd", "mi5pro"]:
     if st.checkbox('Fake Firmware Version (FDV)'):
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         patches.append(f"fdv={fdv_version}")
