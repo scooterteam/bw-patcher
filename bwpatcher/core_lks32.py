@@ -139,6 +139,10 @@ class LKS32Patcher(CorePatcher):
     def fix_checksum(self):
         sig = 'LKS32MC0'.encode()
         ofs = find_pattern(self.data, sig) - 0x8
+
+        if self.data[ofs-2:ofs] != b'\xFF\xFF':
+            return
+
         size = int.from_bytes(
             self.data[ofs:ofs+4],
             byteorder='little'
