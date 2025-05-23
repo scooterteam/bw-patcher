@@ -20,6 +20,7 @@
 
 import keystone
 import capstone
+import crcmod
 
 from bwpatcher.utils import find_pattern
 
@@ -29,6 +30,17 @@ class CorePatcher():
         self.data = bytearray(data)
         self.ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_THUMB)
         self.cs = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB | capstone.CS_MODE_LITTLE_ENDIAN)
+
+    @classmethod
+    def _compute_checksum(cls, data, offset, size):
+        if size > len(data):
+            raise Exception("Error: File is shorter than expected range.")
+
+        data = data[offset:offset+size]
+        chk = crcmod.mkCrcFun(poly=0x11021, initCrc=0, rev=False, xorOut=0)(data)
+        # alternative: chk = binascii.crc_hqx(data, 0)
+
+        return chk.to_bytes(2, byteorder='big')
 
     def assembly(self, code):
         return bytes(self.ks.asm(code)[0])
@@ -73,3 +85,26 @@ class CorePatcher():
 
     def motor_start_speed(self, speed: int):
         raise NotImplementedError()
+
+    def fix_checksum(self, start_ofs, size, chk_ofs=0xa):
+        if self.data[start_ofs-2:start_ofs] != b'\xFF\xFF':
+            return
+
+        size = int.from_bytes(
+            self.data[0:0x4],
+            byteorder='big'
+        )
+
+        pre = b'\0\0'
+        while pre == b'\0\0' and chk_ofs < 0x2e:
+            pre = self.data[chk_ofs:chk_ofs+2]
+            chk_ofs += 0x10
+
+        post = self._compute_checksum(
+            self.data,
+            offset=start_ofs,
+            size=size
+        )
+        self.data[chk_ofs:chk_ofs+2] = post[:2]
+
+        return ("fix_checksum_header", hex(chk_ofs), pre.hex(), post.hex())

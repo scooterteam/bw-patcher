@@ -75,7 +75,7 @@ class LKS32Patcher(CorePatcher):
         return pc_base + (ldr_ofs_val * 4), min_off
 
     @classmethod
-    def __compute_checksum(cls, data, offset, size):
+    def _compute_checksum(cls, data, offset, size):
         if size > len(data):
             raise Exception("Error: File is shorter than expected range.")
 
@@ -148,11 +148,12 @@ class LKS32Patcher(CorePatcher):
             byteorder='little'
         )
         pre = self.data[ofs+4:ofs+8]
-        post = self.__compute_checksum(
+        post = self._compute_checksum(
             self.data,
             offset=ofs+0x18,
             size=size
         )
         self.data[ofs+4:ofs+8] = post
 
-        return ("fix_checksum", hex(ofs), pre.hex(), post.hex())
+        res = super().fix_checksum(ofs, size)
+        return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]

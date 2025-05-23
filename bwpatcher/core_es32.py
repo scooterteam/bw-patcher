@@ -28,33 +28,26 @@ class ES32Patcher(CorePatcher):
         super().__init__(data)
 
     @classmethod
-    def __compute_checksum(cls, data, offset, size):
-        if size > len(data):
-            raise Exception("Error: File is shorter than expected range.")
-
-        data = data[offset:offset+size]
-        chk = crcmod.mkCrcFun(poly=0x11021, initCrc=0, rev=False, xorOut=0)(data)
-        # alternative: chk = binascii.crc_hqx(data, 0)
-
-        return chk.to_bytes(2, byteorder='big')
-
-    @classmethod
     def _calc_speed(cls, speed, factor=20.9, size=2):
         return int(factor * speed).to_bytes(size, 'little')
 
     def fix_checksum(self):
-        sig = 'SZMC-ES-ZM-0283M'.encode()
-        ofs = find_pattern(self.data, sig) + 0x20
+        sig = 'SZMC-ES-ZM-'.encode()
+        ofs_ = find_pattern(self.data, sig)
+        
+        ofs = ofs_ + 0x20
         size = int.from_bytes(
             self.data[ofs-0x2a:ofs-0x28],
             byteorder='big'
         )
         pre = self.data[ofs:ofs+2]
-        post = self.__compute_checksum(
+        post = self._compute_checksum(
             self.data,
             offset=ofs+0x50,
             size=size
         )
         self.data[ofs:ofs+2] = post[:2]
+        print(hex(ofs_), hex(ofs))
 
-        return ("fix_checksum", hex(ofs), pre.hex(), post.hex())
+        res = super().fix_checksum(ofs_ - 0x10, size)
+        return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
