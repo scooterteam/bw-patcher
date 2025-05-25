@@ -67,9 +67,6 @@ class CorePatcher():
     def region_free(self):
         raise NotImplementedError()
 
-    def fix_checksum(self):
-        raise NotImplementedError()
-
     def fake_drv_version(self, firmware_version: str):
         raise NotImplementedError()
 
@@ -85,10 +82,10 @@ class CorePatcher():
             byteorder='big'
         )
 
-        pre = b'\0\0'
+        pre = self.data[chk_ofs:chk_ofs+2]
         while pre == b'\0\0' and chk_ofs < 0x2e:
-            pre = self.data[chk_ofs:chk_ofs+2]
             chk_ofs += 0x10
+            pre = self.data[chk_ofs:chk_ofs+2]
 
         post = CorePatcher._compute_checksum(
             self.data,

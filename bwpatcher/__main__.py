@@ -24,17 +24,17 @@ from bwpatcher.modules import ALL_MODULES
 from bwpatcher.utils import patch_map, patch_firmware
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("model", help="Dev name of scooter.", type=str.lower, choices=ALL_MODULES)
-parser.add_argument("infile")
-parser.add_argument("outfile")
-parser.add_argument("patches", type=str, help="The patches that are to be applied. Choose from: " + ', '.join(patch_map.keys()))
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model", help="Dev name of scooter.", type=str.lower, choices=ALL_MODULES)
+    parser.add_argument("infile")
+    parser.add_argument("outfile")
+    parser.add_argument("patches", type=str, help="The patches that are to be applied. Choose from: " + ', '.join(patch_map.keys()))
+    args = parser.parse_args()
 
-with open(args.infile, 'rb') as fh:
-    data = fh.read()
+    with open(args.infile, 'rb') as fh:
+        data = fh.read()
 
-output_data = patch_firmware(args.model, data, args.patches.split(","), web=False)
-
-with open(args.outfile, 'wb') as fh:
-    fh.write(output_data)
+    output_data = patch_firmware(args.model, data, args.patches.split(","), web=False)
+    with open(args.outfile, 'wb') as fh:
+        fh.write(output_data)
