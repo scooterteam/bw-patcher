@@ -129,6 +129,3 @@ class Mi5proPatcher(ES32Patcher):
 
     def remove_speed_limit_sport(self):
         return self.speed_limit_sport(speed=36.7)
-
-    def fake_drv_version(self, firmware_version: str):
-        raise NotImplementedError("Not implemented for 5pro")

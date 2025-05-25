@@ -157,3 +157,16 @@ class LKS32Patcher(CorePatcher):
 
         res = super().fix_checksum(ofs, size)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
+
+    def fake_drv_version(self, firmware_version: str):
+        if not firmware_version.isdigit():
+            raise ValueError(f"Firmware version must contain only digits: {firmware_version}")
+        if len(firmware_version) != 4:
+            raise ValueError(f"Firmware version must have 4 digits: {firmware_version}")
+
+        sig = [0x6F, 0x6B, 0x0D, None, None, None, None, 0x0D, 0x65, 0x72, 0x72, 0x6F, 0x72]
+        ofs = find_pattern(self.data, sig) + 3
+        pre = self.data[ofs:ofs+4]
+        post = firmware_version.encode("ascii")
+        self.data[ofs:ofs+4] = post
+        return [("fake_drv_version", hex(ofs), pre.hex(), post.hex())]
