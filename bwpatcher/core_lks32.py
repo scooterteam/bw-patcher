@@ -82,7 +82,7 @@ class LKS32Patcher(CorePatcher):
             byteorder='little'
         )
         pre = self.data[ofs+4:ofs+8]
-        post = self._compute_checksum(
+        post = LKS32Patcher._compute_checksum(
             self.data,
             offset=ofs+0x18,
             size=size

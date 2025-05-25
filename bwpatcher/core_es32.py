@@ -41,13 +41,12 @@ class ES32Patcher(CorePatcher):
             byteorder='big'
         )
         pre = self.data[ofs:ofs+2]
-        post = self._compute_checksum(
+        post = CorePatcher._compute_checksum(
             self.data,
             offset=ofs+0x50,
             size=size
         )
         self.data[ofs:ofs+2] = post[:2]
-        print(hex(ofs_), hex(ofs))
 
         res = super().fix_checksum(ofs_ - 0x10, size)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]

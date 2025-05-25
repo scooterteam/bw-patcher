@@ -90,7 +90,7 @@ class CorePatcher():
             pre = self.data[chk_ofs:chk_ofs+2]
             chk_ofs += 0x10
 
-        post = self._compute_checksum(
+        post = CorePatcher._compute_checksum(
             self.data,
             offset=start_ofs,
             size=size
