@@ -32,31 +32,13 @@ class LKS32Patcher(CorePatcher):
     def _speed_limits_fix(self, sig: list, sig_dst: list):
         ret = []
         ofs = find_pattern(self.data, sig) + len(sig)
-        try:
-            # jump to the end of the function
-            ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
-            pre = self.data[ofs:ofs+2]
-            post = self.assembly(f"b {ofs_dst-ofs}")
+        # jump to the end of the function
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly(f"b {ofs_dst-ofs}")
+        if pre != post:
             self.data[ofs:ofs+2] = post
             ret.append(("speed_limits_fix", hex(ofs), pre.hex(), post.hex()))
-
-            # NOP unnecessary code, making space for 4-bytes speed limit values
-            ofs += 2
-            nop_size = ofs_dst - ofs
-            assert nop_size % 2 == 0, "Odd size of the space needed."
-
-            pre = self.data[ofs:ofs+nop_size]
-            post = self.assembly(f"nop") * (nop_size//2)
-            assert len(pre) == len(post), "Wrong length of post bytes"
-
-            self.data[ofs:ofs+nop_size] = post
-            ret.append(("speed_limits_fix_nop", hex(ofs), pre.hex(), post.hex()))
-        except SignatureException:
-            # verify if the patch has already been used
-            # otherwise the function will raise a SignatureException
-            sig_dst = [0x00, 0xBF, 0x00, 0xBF, sig_dst[-2], sig_dst[-1]]
-            ofs_dst = find_pattern(self.data, sig_dst, start=ofs)
-
         return ret
 
     @staticmethod
