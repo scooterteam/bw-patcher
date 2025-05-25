@@ -25,6 +25,8 @@ from bwpatcher.utils import find_pattern
 class Mi4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)
+        self.speed_sig = [0x20, 0x31, 0x8E, 0x72, 0x0F, 0x26, 0xCE, 0x72]
+        self.speed_sig_dst = [0xF5, 0x31, 0x01, 0x83, 0x11, 0x48]
 
     def dashboard_max_speed(self, speed: float):
         assert 1.0 <= speed <= 29.6, "Speed must be between 1.0 and 29.6km/h"
@@ -46,39 +48,36 @@ class Mi4Patcher(LKS32Patcher):
         return [("dashboard_max_speed", hex(ofs), pre.hex(), post_if.hex())]
 
     def speed_limit_drive(self, kmh: float):
-        assert 1.0 <= kmh <= 25.5, "Speed must be between 1.0 and 25.5km/h"
-        speed = int(kmh*10)
+        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
         sig = [0xCA, 0x24, 0x04, 0x80, None, 0x4D, 0xB9, 0x21, 0xC5, 0x80]
-        ofs = find_pattern(self.data, sig)
+        sig_dst = self.speed_sig + [None, None]
 
-        pre = self.data[ofs:ofs+2]
-        post = self.assembly(f'MOVS R4, #{speed}')
-        self.data[ofs:ofs+2] = post
-        return [("speed_limit_drive", hex(ofs), pre.hex(), post.hex())]
+        ofs = find_pattern(self.data, sig)
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst)
+
+        speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
+        speed = int(kmh * 10).to_bytes(4, byteorder='little')
+        pre = self.data[speed_ofs:speed_ofs + 4]
+        self.data[speed_ofs:speed_ofs + 4] = speed
+        ret.append(("speed_limit_drive_value", hex(speed_ofs), pre.hex(), speed.hex()))
+
+        pre = self.data[ofs:ofs + 2]
+        post = self.assembly(f"ldr r4,[pc, #{ldr_ofs}]")
+        assert len(post) == 2, "Wrong length of post bytes"
+        self.data[ofs:ofs + 2] = post
+        ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
+        return ret
+
+    def speed_limit_sport(self, kmh: float):
+        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
+        sig = [0x71, 0x1C, 0x00, 0x00, 0x55, 0x02, 0x00, 0x00, 0xB0, 0xAD, 0x01, 0x00]
+        ofs = find_pattern(self.data, sig) + 4
+
+        speed = int(kmh * 10).to_bytes(4, byteorder='little')
+        pre = self.data[ofs:ofs+4]
+        self.data[ofs:ofs + 4] = speed
+        ret.append(("speed_limit_sport_value", hex(ofs), pre.hex(), speed.hex()))
+        return ret
 
     def remove_speed_limit_sport(self):
-        sig = [0x5B, 0x68, 0x22, 0x4F, 0xDF, 0x19, 0x98, 0x23]
-        ofs = find_pattern(self.data, sig)
-        patch_asm = """
-        NOP
-        ldr r7, [pc, #0x88]
-        NOP
-        movs r3, #0x98
-        NOP
-        beq #0x16
-        NOP; NOP
-        cmp r7, #2
-        bne #0x4a
-        b #0x2a
-        NOP
-        movs r3, #0xff
-        adds r3, #0xcd
-        NOP; NOP; NOP; NOP
-        movs r0, #0xa
-        NOP
-        """
-        post = self.assembly(patch_asm)
-        assert len(post) == 40, "wrong length of post bytes"
-        pre = self.data[ofs:ofs+len(post)]
-        self.data[ofs:ofs+len(post)] = post
-        return [("sport_no_limit", hex(ofs), pre.hex(), post.hex())]
+        return self.speed_limit_sport(kmh=36.7)
