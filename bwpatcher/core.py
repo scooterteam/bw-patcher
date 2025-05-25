@@ -95,6 +95,7 @@ class CorePatcher():
             offset=start_ofs,
             size=size
         )
-        self.data[chk_ofs:chk_ofs+2] = post[:2]
+        assert len(post) == 2
+        self.data[chk_ofs:chk_ofs+2] = post
 
         return ("fix_checksum_header", hex(chk_ofs), pre.hex(), post.hex())

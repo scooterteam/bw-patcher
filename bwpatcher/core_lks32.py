@@ -87,6 +87,7 @@ class LKS32Patcher(CorePatcher):
             offset=ofs+0x18,
             size=size
         )
+        assert len(post) == 4
         self.data[ofs+4:ofs+8] = post
 
         res = super().fix_checksum(ofs, size)

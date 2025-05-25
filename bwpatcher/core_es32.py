@@ -46,6 +46,7 @@ class ES32Patcher(CorePatcher):
             offset=ofs+0x50,
             size=size
         )
+        assert len(post) == 2
         self.data[ofs:ofs+2] = post[:2]
 
         res = super().fix_checksum(ofs_ - 0x10, size)
