@@ -32,16 +32,12 @@ scooter_model = st.selectbox('Choose the model of your scooter', models)
 st.subheader('Select Patches')
 patches = []
 
-if scooter_model in ['mi4']:
-    if st.checkbox('Remove Speed Limit Sport (RSLS)'):
-        patches.append('rsls')
-
-if scooter_model in ['mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
+if scooter_model in ['mi4', 'mi4pro2nd', 'ultra4', 'mi5pro', 'mi5', 'mi5max']:
     if st.checkbox('Speed Limit Sport (SLS)'):
         sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
         patches.append(f'sls={sls_speed}')
 
-if scooter_model in ['mi4', 'mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
+if scooter_model in ['mi4', 'ultra4', 'mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
     if st.checkbox('Speed Limit Drive (SLD)'):
         sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
         patches.append(f'sld={sld_speed}')

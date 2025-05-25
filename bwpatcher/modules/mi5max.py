@@ -18,10 +18,9 @@
 # - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
 #
 
-from bwpatcher.core_lks32 import LKS32Patcher
-from bwpatcher.utils import find_pattern
+from bwpatcher.modules.mi5 import Mi5Patcher
 
 
-class Mi5maxPatcher(LKS32Patcher):
+class Mi5maxPatcher(Mi5Patcher):
     def __init__(self, data):
         super().__init__(data)

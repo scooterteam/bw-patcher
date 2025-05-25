@@ -29,37 +29,16 @@ class LKS32Patcher(CorePatcher):
     def __init__(self, data):
         super().__init__(data)
 
-    def _speed_limits_fix(self):
+    def _speed_limits_fix(self, sig: list, sig_dst: list):
         ret = []
-        sig = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42]
-        sig_dst = [0xF5, 0x31, 0x41, 0x81, 0x70, 0xBD]
-
         ofs = find_pattern(self.data, sig) + len(sig)
-        try:
-            # jump to the end of the function
-            ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
-            pre = self.data[ofs:ofs+2]
-            post = self.assembly(f"b {ofs_dst-ofs}")
+        # jump to the end of the function
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly(f"b {ofs_dst-ofs}")
+        if pre != post:
             self.data[ofs:ofs+2] = post
             ret.append(("speed_limits_fix", hex(ofs), pre.hex(), post.hex()))
-
-            # NOP unnecessary code, making space for 4-bytes speed limit values
-            ofs += 2
-            nop_size = ofs_dst - ofs
-            assert nop_size % 2 == 0, "Odd size of the space needed."
-
-            pre = self.data[ofs:ofs+nop_size]
-            post = self.assembly(f"nop") * (nop_size//2)
-            assert len(pre) == len(post), "Wrong length of post bytes"
-
-            self.data[ofs:ofs+nop_size] = post
-            ret.append(("speed_limits_fix_nop", hex(ofs), pre.hex(), post.hex()))
-        except SignatureException:
-            # verify if the patch has already been used
-            # otherwise the function will raise a SignatureException
-            sig_dst = [0x00, 0xBF, 0x00, 0xBF, 0x70, 0xBD]
-            ofs_dst = find_pattern(self.data, sig_dst, start=ofs)
-
         return ret
 
     @staticmethod
@@ -91,51 +70,6 @@ class LKS32Patcher(CorePatcher):
         chk = crc_func(padded) & 0xFFFFFFFF
         return chk.to_bytes(4, byteorder='little')
 
-    def speed_limit_drive(self, kmh: float):
-        ret = [self._speed_limits_fix()]
-        sig = [None, 0x49, 0x41, 0x82, 0xcb, 0x25, 0x05, 0x80]
-        sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
-
-        ofs = find_pattern(self.data, sig) + 4
-        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst)
-
-        speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
-        speed = int(kmh*10).to_bytes(4, byteorder='little')
-        pre = self.data[speed_ofs:speed_ofs+4]
-        self.data[speed_ofs:speed_ofs+4] = speed
-        ret.append(("speed_limit_drive_value", hex(speed_ofs), pre.hex(), speed.hex()))
-
-        pre = self.data[ofs:ofs+2]
-        post = self.assembly(f"ldr r5,[pc, #{ldr_ofs}]")
-        assert len(post) == 2, "Wrong length of post bytes"
-        self.data[ofs:ofs+2] = post
-        ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
-        return ret
-
-    def speed_limit_sport(self, kmh: float):
-        ret = [self._speed_limits_fix()]
-        sig = [0xfd, 0x21, 0x41, 0x80, None, 0x49, 0x81, 0x61]
-        sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
-
-        ofs = find_pattern(self.data, sig)
-        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst) + 4
-
-        speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
-        speed = int(kmh*10).to_bytes(4, byteorder='little')
-        pre = self.data[speed_ofs:speed_ofs+4]
-        self.data[speed_ofs:speed_ofs+4] = speed
-        ret.append(("speed_limit_sport_value", hex(speed_ofs), pre.hex(), speed.hex()))
-
-        pre = self.data[ofs:ofs+2]
-        post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")
-        assert len(post) == 2, "Wrong length of post bytes"
-        self.data[ofs:ofs+2] = post
-        ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
-        return ret
-
-    def remove_speed_limit_sport(self):
-        return self.speed_limit_sport(kmh=36.7)
-
     def fix_checksum(self):
         sig = 'LKS32MC0'.encode()
         ofs = find_pattern(self.data, sig) - 0x8
@@ -157,3 +91,16 @@ class LKS32Patcher(CorePatcher):
 
         res = super().fix_checksum(ofs, size)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
+
+    def fake_drv_version(self, firmware_version: str):
+        if not firmware_version.isdigit():
+            raise ValueError(f"Firmware version must contain only digits: {firmware_version}")
+        if len(firmware_version) != 4:
+            raise ValueError(f"Firmware version must have 4 digits: {firmware_version}")
+
+        sig = [0x6F, 0x6B, 0x0D, None, None, None, None, 0x0D, 0x65, 0x72, 0x72, 0x6F, 0x72]
+        ofs = find_pattern(self.data, sig) + 3
+        pre = self.data[ofs:ofs+4]
+        post = firmware_version.encode("ascii")
+        self.data[ofs:ofs+4] = post
+        return [("fake_drv_version", hex(ofs), pre.hex(), post.hex())]
