@@ -73,14 +73,15 @@ class CorePatcher():
     def motor_start_speed(self, speed: int):
         raise NotImplementedError()
 
-    def fix_checksum(self, start_ofs, size, chk_ofs=0xa):
+    def fix_checksum(self, start_ofs, size=None, chk_ofs=0xa):
         if self.data[start_ofs-2:start_ofs] != b'\xFF\xFF':
             return
 
-        size = int.from_bytes(
-            self.data[0:0x4],
-            byteorder='big'
-        )
+        if not size:
+            size = int.from_bytes(
+                self.data[0:0x4],
+                byteorder='big'
+            )
 
         pre = self.data[chk_ofs:chk_ofs+2]
         while pre == b'\0\0' and chk_ofs < 0x2e:
@@ -96,3 +97,24 @@ class CorePatcher():
         self.data[chk_ofs:chk_ofs+2] = post
 
         return ("fix_checksum_header", hex(chk_ofs), pre.hex(), post.hex())
+
+
+if __name__ == "__main__":
+    import sys
+    data_path = sys.argv[1]
+    with open(data_path, 'rb') as f:
+        data = f.read()
+    chk_ofs=0x13
+    start_ofs=0x80
+    #size=0x9cb0-start_ofs
+    size=len(data)-start_ofs
+    print(hex(size))
+    pre = data[chk_ofs:chk_ofs+2]
+    post = CorePatcher._compute_checksum(
+        data,
+        offset=start_ofs,
+        size=size
+    )
+    assert len(post) == 2
+
+    print("fix_checksum_header", hex(chk_ofs), pre.hex(), post.hex())

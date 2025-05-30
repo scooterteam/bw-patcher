@@ -31,10 +31,10 @@ class ES32Patcher(CorePatcher):
     def _calc_speed(cls, speed, factor=20.9, size=2):
         return int(factor * speed).to_bytes(size, 'little')
 
-    def fix_checksum(self):
+    def fix_checksum(self, navee=False):
         sig = 'SZMC-ES-ZM-'.encode()
         ofs_ = find_pattern(self.data, sig)
-        
+
         ofs = ofs_ + 0x20
         size = int.from_bytes(
             self.data[ofs-0x2a:ofs-0x28],
@@ -49,5 +49,13 @@ class ES32Patcher(CorePatcher):
         assert len(post) == 2
         self.data[ofs:ofs+2] = post[:2]
 
-        res = super().fix_checksum(ofs_ - 0x10, size)
+        # fix header checksum
+        ofs = ofs_ - 0x10
+        size = None
+        chk_ofs = 0xa
+        if navee:
+            size = len(self.data) - ofs
+            chk_ofs = 0x13
+        res = super().fix_checksum(ofs, size=size, chk_ofs=chk_ofs)
+
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
