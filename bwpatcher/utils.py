@@ -43,8 +43,10 @@ patch_map = {
 
 def patch_firmware(model: str, data: bytes, patches: list, web=True):
     # CHK patch must always come last for every scooter using update file
-    if patches[-1] != "chk":
-        patches.append("chk")
+    # --> no longer forcing, instead put in GUI
+    #if patches[-1] != "chk":
+    #    patches.append("chk")
+    print("Patchlist:", patches)
 
     errors = []
     module = import_module(f"bwpatcher.modules.{model}")

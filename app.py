@@ -1,4 +1,5 @@
 from bwpatcher.utils import patch_firmware
+from bwpatcher.modules import ALL_MODULES
 from io import BytesIO
 import streamlit as st
 
@@ -25,7 +26,7 @@ uploaded_file = st.file_uploader("Choose a firmware file...", type=["bin"])
 
 # Select scooter model
 st.subheader('Select Scooter Model')
-models = ['mi4', 'mi4pro2nd', 'ultra4', 'mi5pro', 'mi5', 'mi5max']
+models = ALL_MODULES
 scooter_model = st.selectbox('Choose the model of your scooter', models)
 
 # Choose patches to apply
@@ -56,10 +57,13 @@ if scooter_model not in ["mi4pro2nd", "mi5pro"]:
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         patches.append(f"fdv={fdv_version}")
 
-if scooter_model == "ultra4":
+if scooter_model in ["ultra4"]:
     if st.checkbox('Motor Start Speed (MSS)'):
         mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
         patches.append(f"mss={mss_speed}")
+
+if st.checkbox('Fix checksum', value=True):
+    patches.append('chk')
 
 
 # Process and download

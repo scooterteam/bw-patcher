@@ -49,13 +49,6 @@ class ES32Patcher(CorePatcher):
         assert len(post) == 2
         self.data[ofs:ofs+2] = post[:2]
 
-        # fix header checksum
         ofs = ofs_ - 0x10
-        size = None
-        chk_ofs = 0xa
-        if navee:
-            size = len(self.data) - ofs
-            chk_ofs = 0x13
-        res = super().fix_checksum(ofs, size=size, chk_ofs=chk_ofs)
-
+        res = super().fix_checksum(ofs)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
