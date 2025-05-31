@@ -62,12 +62,13 @@ if scooter_model in ["ultra4"]:
         mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
         patches.append(f"mss={mss_speed}")
 
-if st.checkbox('Fix checksum', value=True):
-    patches.append('chk')
 
 
 # Process and download
 if uploaded_file is not None and patches:
+    if patches[-1] != "chk":
+        patches.append("chk")
+    
     # Read the uploaded file into memory
     input_firmware = uploaded_file.read()
 
