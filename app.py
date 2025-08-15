@@ -1,4 +1,6 @@
 from bwpatcher.utils import patch_firmware
+from bwpatcher.modules import ALL_MODULES
+
 from io import BytesIO
 import streamlit as st
 
@@ -25,22 +27,19 @@ uploaded_file = st.file_uploader("Choose a firmware file...", type=["bin"])
 
 # Select scooter model
 st.subheader('Select Scooter Model')
-models = ['mi4', 'mi4pro2nd', 'ultra4', 'mi5pro', 'mi5', 'mi5max']
-scooter_model = st.selectbox('Choose the model of your scooter', models)
+scooter_model = st.selectbox('Choose the model of your scooter', ALL_MODULES)
 
 # Choose patches to apply
 st.subheader('Select Patches')
 patches = []
 
-if scooter_model in ['mi4', 'mi4pro2nd', 'ultra4', 'mi5pro', 'mi5', 'mi5max']:
-    if st.checkbox('Speed Limit Sport (SLS)'):
-        sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
-        patches.append(f'sls={sls_speed}')
+if st.checkbox('Speed Limit Sport (SLS)'):
+    sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
+    patches.append(f'sls={sls_speed}')
 
-if scooter_model in ['mi4', 'ultra4', 'mi4pro2nd', 'mi5pro', 'mi5', 'mi5max']:
-    if st.checkbox('Speed Limit Drive (SLD)'):
-        sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
-        patches.append(f'sld={sld_speed}')
+if st.checkbox('Speed Limit Drive (SLD)'):
+    sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
+    patches.append(f'sld={sld_speed}')
 
 if scooter_model in ['mi4', 'ultra4']:
     if st.checkbox('Dashboard Max Speed (DMS)'):
