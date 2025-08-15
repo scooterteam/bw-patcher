@@ -29,16 +29,17 @@ class LKS32Patcher(CorePatcher):
     def __init__(self, data):
         super().__init__(data)
 
-    def _speed_limits_fix(self, sig: list, sig_dst: list):
+    def _branch_from_to(self, sig: list, sig_dst: list, description: str, dst_offset: int = 4):
+        # TODO: offsets from src and dst are really weird, need to fix it
         ret = []
         ofs = find_pattern(self.data, sig) + len(sig)
         # jump to the end of the function
-        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + 4
+        ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + dst_offset
         pre = self.data[ofs:ofs+2]
         post = self.assembly(f"b {ofs_dst-ofs}")
         if pre != post:
             self.data[ofs:ofs+2] = post
-            ret.append(("speed_limits_fix", hex(ofs), pre.hex(), post.hex()))
+            ret.append((description, hex(ofs), pre.hex(), post.hex()))
         return ret
 
     @staticmethod

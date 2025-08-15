@@ -25,11 +25,11 @@ from bwpatcher.utils import find_pattern
 class Mi5Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)
-        self.speed_sig = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42]
-        self.speed_sig_dst = [0xF5, 0x31, 0x41, 0x81, 0x70, 0xBD]
+        self.sig_branch_src = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42]
+        self.sig_branch_src_dst = [0xF5, 0x31, 0x41, 0x81, 0x70, 0xBD]
 
     def speed_limit_drive(self, kmh: float):
-        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
+        ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         sig = [None, 0x49, 0x41, 0x82, 0xcb, 0x25, 0x05, 0x80]
         sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
 
@@ -50,7 +50,7 @@ class Mi5Patcher(LKS32Patcher):
         return ret
 
     def speed_limit_sport(self, kmh: float):
-        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
+        ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         sig = [0xfd, 0x21, 0x41, 0x80, None, 0x49, 0x81, 0x61]
         sig_dst = [0x59, 0x68, None, 0x4A, None, 0x3A, 0x91, 0x42, None, None]
 
