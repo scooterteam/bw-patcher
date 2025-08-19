@@ -67,28 +67,30 @@ class CorePatcher():
     def region_free(self):
         raise NotImplementedError()
 
-    def fix_checksum(self):
-        raise NotImplementedError()
-
     def fake_drv_version(self, firmware_version: str):
         raise NotImplementedError()
 
     def motor_start_speed(self, speed: int):
         raise NotImplementedError()
 
-    def fix_checksum(self, start_ofs, size, chk_ofs=0xa):
+    def fix_checksum(self, start_ofs):
         if self.data[start_ofs-2:start_ofs] != b'\xFF\xFF':
             return
 
-        size = int.from_bytes(
-            self.data[0:0x4],
-            byteorder='big'
-        )
+        if chr(self.data[0]) == 'T':
+            size = len(self.data) - start_ofs
+            chk_ofs = 0x13
+        else:
+            size = int.from_bytes(
+                self.data[0:0x4],
+                byteorder='big'
+            )
+            chk_ofs = 0xa
 
-        pre = b'\0\0'
+        pre = self.data[chk_ofs:chk_ofs+2]
         while pre == b'\0\0' and chk_ofs < 0x2e:
-            pre = self.data[chk_ofs:chk_ofs+2]
             chk_ofs += 0x10
+            pre = self.data[chk_ofs:chk_ofs+2]
 
         post = CorePatcher._compute_checksum(
             self.data,

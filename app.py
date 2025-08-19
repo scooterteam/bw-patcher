@@ -1,6 +1,5 @@
 from bwpatcher.utils import patch_firmware
 from bwpatcher.modules import ALL_MODULES
-
 from io import BytesIO
 import streamlit as st
 
@@ -55,14 +54,18 @@ if scooter_model not in ["mi4pro2nd", "mi5pro"]:
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         patches.append(f"fdv={fdv_version}")
 
-if scooter_model == "ultra4":
+if scooter_model in ["ultra4"]:
     if st.checkbox('Motor Start Speed (MSS)'):
         mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
         patches.append(f"mss={mss_speed}")
 
 
+
 # Process and download
 if uploaded_file is not None and patches:
+    if patches[-1] != "chk":
+        patches.append("chk")
+    
     # Read the uploaded file into memory
     input_firmware = uploaded_file.read()
 

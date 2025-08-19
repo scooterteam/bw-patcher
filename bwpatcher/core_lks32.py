@@ -91,7 +91,7 @@ class LKS32Patcher(CorePatcher):
         assert len(post) == 4
         self.data[ofs+4:ofs+8] = post
 
-        res = super().fix_checksum(ofs, size)
+        res = super().fix_checksum(ofs)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
 
     def fake_drv_version(self, firmware_version: str):
