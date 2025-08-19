@@ -25,8 +25,8 @@ from bwpatcher.utils import find_pattern
 class Ultra4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)
-        self.speed_sig = [0xCB, 0x73, None, None, 0x03, 0x80, None, None, 0x41, 0x80]
-        self.speed_sig_dst = [0x45, 0x81, 0x85, 0x81, None, 0x48]
+        self.sig_branch_src = [0xCB, 0x73, None, None, 0x03, 0x80, None, None, 0x41, 0x80]
+        self.sig_branch_src_dst = [0x45, 0x81, 0x85, 0x81, None, 0x48]
 
     def dashboard_max_speed(self, speed: float):
         assert 1.0 <= speed <= 29.6, "Speed must be between 1.0 and 29.6km/h"
@@ -70,9 +70,9 @@ class Ultra4Patcher(LKS32Patcher):
         return [("motor_start_speed", hex(ofs), pre.hex(), post.hex())]
 
     def speed_limit_drive(self, kmh: float):
-        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
+        ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         sig = [0x0F, 0x23, 0xCB, 0x73, 0xCA, 0x23, 0x03, 0x80]
-        sig_dst = self.speed_sig + [None, None]
+        sig_dst = self.sig_branch_src + [None, None]
 
         ofs = find_pattern(self.data, sig) + 4
         ofs_dst = find_pattern(self.data, sig_dst, start=ofs-4) + len(sig_dst)
@@ -91,12 +91,11 @@ class Ultra4Patcher(LKS32Patcher):
         return ret
 
     def speed_limit_sport(self, kmh: float):
-        ret = [self._speed_limits_fix(self.speed_sig, self.speed_sig_dst)]
+        ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         sig = [0x0F, 0x23, 0xCB, 0x73, None, None, 0x03, 0x80, 0xFC, 0x21, 0x41, 0x80]
-        sig_dst = self.speed_sig + [None, None]
 
         ofs = find_pattern(self.data, sig) + 8
-        ofs_dst = find_pattern(self.data, sig_dst, start=ofs-8) + len(sig_dst) + 4
+        ofs_dst = find_pattern(self.data, self.sig_branch_src, start=ofs-8) + len(self.sig_branch_src) + 6
 
         speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
         speed = int(kmh*10).to_bytes(4, byteorder='little')
