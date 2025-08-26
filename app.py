@@ -45,10 +45,6 @@ if scooter_model in ['mi4', 'ultra4']:
         dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0, 0.1)
         patches.append(f'dms={dms_speed}')
 
-if scooter_model in ['mi4pro2nd', 'mi5pro']:
-    if st.checkbox('Region-Free (RFM)'):
-        patches.append('rfm')
-
 if scooter_model not in ["mi4pro2nd", "mi5pro"]:
     if st.checkbox('Fake Firmware Version (FDV)'):
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
