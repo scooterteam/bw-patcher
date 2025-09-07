@@ -38,6 +38,7 @@ patch_map = {
     "fdv": lambda patcher: patcher.fake_drv_version,
     "chk": lambda patcher: patcher.fix_checksum,
     "mss": lambda patcher: patcher.motor_start_speed,
+    "cce": lambda patcher: patcher.cruise_control_enable,
 }
 
 

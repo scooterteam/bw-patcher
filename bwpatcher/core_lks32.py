@@ -106,3 +106,12 @@ class LKS32Patcher(CorePatcher):
         post = firmware_version.encode("ascii")
         self.data[ofs:ofs+4] = post
         return [("fake_drv_version", hex(ofs), pre.hex(), post.hex())]
+
+
+    def cruise_control_enable(self):
+        sig = [ 0x81, 0x06, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70, 0x01, 0x07, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70 ]
+        ofs = find_pattern(self.data, sig) + 4
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly("movs r1, #0x1")
+        self.data[ofs:ofs+2] = post
+        return [("cruise_control_enable", hex(ofs), pre.hex(), post.hex())]

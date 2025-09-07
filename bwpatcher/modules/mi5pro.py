@@ -102,10 +102,11 @@ class Mi5proPatcher(ES32Patcher):
         ofs_ = find_pattern(self.data, sig)
         pre_ = self.data[ofs_:ofs_+2]
 
+        dst_reg = 1
         sig = [ 0x01, 0x88, 0xd0, 0xe7, 0x12, 0x78, 0x0b, 0x78 ]
         ofs = find_pattern(self.data, sig)
         pre = self.data[ofs:ofs+2]
-        post = self.assembly("mov r1,r0")
+        post = self.assembly(f"mov r{dst_reg},r0")
         self.data[ofs:ofs+2] = post
         res += [("speed_limit_sport_0", hex(ofs), pre.hex(), post.hex())]
 

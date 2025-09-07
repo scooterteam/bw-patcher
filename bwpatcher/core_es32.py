@@ -52,3 +52,11 @@ class ES32Patcher(CorePatcher):
         ofs = ofs_ - 0x10
         res = super().fix_checksum(ofs)
         return [("fix_checksum", hex(ofs), pre.hex(), post.hex()), res]
+
+    def cruise_control_enable(self):
+        sig = [ 0xca, 0x09, 0x1a, 0x70, 0x4a, 0x06, None, 0x4b, 0xd2, 0x0f, 0x1a, 0x70, 0x8a, 0x06, None, 0x4b, 0xd2, 0x0f, 0x1a, 0x70 ]
+        ofs = find_pattern(self.data, sig) + len(sig) - 4
+        pre = self.data[ofs:ofs+2]
+        post = self.assembly("movs r2, #0x1")
+        self.data[ofs:ofs+2] = post
+        return [("cruise_control_enable", hex(ofs), pre.hex(), post.hex())]
