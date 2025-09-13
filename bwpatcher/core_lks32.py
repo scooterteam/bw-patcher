@@ -71,6 +71,18 @@ class LKS32Patcher(CorePatcher):
         chk = crc_func(padded) & 0xFFFFFFFF
         return chk.to_bytes(4, byteorder='little')
 
+    def _cruise_control_unlock(self):
+        if not hasattr(self, "SIG_CCU"):
+            return []
+
+        sig = self.SIG_CCU
+        ofs = find_pattern(self.data, sig)
+        pre = self.data[ofs:ofs+len(sig)]
+        post = self.assembly('nop') * (len(sig) // 2)
+        assert len(pre) == len(post)
+        self.data[ofs:ofs+len(sig)] = post
+        return ("cruise_control_unlock", hex(ofs), pre.hex(), post.hex())
+
     def fix_checksum(self):
         sig = 'LKS32MC0'.encode()
         ofs = find_pattern(self.data, sig) - 0x8
@@ -107,11 +119,37 @@ class LKS32Patcher(CorePatcher):
         self.data[ofs:ofs+4] = post
         return [("fake_drv_version", hex(ofs), pre.hex(), post.hex())]
 
-
     def cruise_control_enable(self):
-        sig = [ 0x81, 0x06, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70, 0x01, 0x07, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70 ]
+        res = []
+
+        sig = [0x81, 0x06, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70, 0x01, 0x07, None, 0x4b, 0xc9, 0x0f, 0x19, 0x70]
         ofs = find_pattern(self.data, sig) + 4
         pre = self.data[ofs:ofs+2]
         post = self.assembly("movs r1, #0x1")
         self.data[ofs:ofs+2] = post
-        return [("cruise_control_enable", hex(ofs), pre.hex(), post.hex())]
+        res += [("cruise_control_enable", hex(ofs), pre.hex(), post.hex())]
+
+        res += self._cruise_control_unlock()
+
+        return res
+
+    def region_free(self):
+        if not hasattr(self, "SNS"):
+            return
+
+        res = []
+        i = 0
+        for sn in self.SNS:
+            ofs = 0
+            while True:
+                try:
+                    ofs = find_pattern(self.data, sn, start=ofs+1)
+                    pre = self.data[ofs:ofs+4]
+                    post = b'\0\0\0\0'
+                    self.data[ofs:ofs+4] = post
+                    res += [(f"region_free_{i}", hex(ofs), pre.hex(), post.hex())]
+                    i += 1
+                except SignatureException:
+                    break
+
+        return res

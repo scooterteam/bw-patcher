@@ -62,12 +62,11 @@ if scooter_model in ["ultra4"]:
         patches.append(f"mss={mss_speed}")
 
 
-
 # Process and download
 if uploaded_file is not None and patches:
     if patches[-1] != "chk":
         patches.append("chk")
-    
+
     # Read the uploaded file into memory
     input_firmware = uploaded_file.read()
 
