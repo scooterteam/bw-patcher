@@ -50,13 +50,10 @@ if scooter_model not in ["mi4pro2nd", "mi5pro"]:
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         patches.append(f"fdv={fdv_version}")
 
-    if st.checkbox('Cruise Control Enable (CCE) - EXPERIMENTAL'):
-        patches.append("cce")
-else:
-    if st.checkbox('Cruise Control Enable (CCE)'):
-        patches.append("cce")
+if st.checkbox('Cruise Control Enable (CCE)'):
+    patches.append("cce")
 
-if scooter_model in ["ultra4", "mi4pro2nd", "mi5pro"]:
+if scooter_model not in ["mi4", "mi4lite"]:
     if st.checkbox('Motor Start Speed (MSS)'):
         mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
         patches.append(f"mss={mss_speed}")
