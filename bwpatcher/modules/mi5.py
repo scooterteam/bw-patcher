@@ -40,7 +40,7 @@ class Mi5Patcher(LKS32Patcher):
         ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst)
 
         speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
-        speed = int(kmh*10).to_bytes(4, byteorder='little')
+        speed = self._calc_speed(kmh)
         pre = self.data[speed_ofs:speed_ofs+4]
         self.data[speed_ofs:speed_ofs+4] = speed
         ret.append(("speed_limit_drive_value", hex(speed_ofs), pre.hex(), speed.hex()))
@@ -61,7 +61,7 @@ class Mi5Patcher(LKS32Patcher):
         ofs_dst = find_pattern(self.data, sig_dst, start=ofs) + len(sig_dst) + 4
 
         speed_ofs, ldr_ofs = self._safe_ldr(ofs, ofs_dst)
-        speed = int(kmh*10).to_bytes(4, byteorder='little')
+        speed = self._calc_speed(kmh)
         pre = self.data[speed_ofs:speed_ofs+4]
         self.data[speed_ofs:speed_ofs+4] = speed
         ret.append(("speed_limit_sport_value", hex(speed_ofs), pre.hex(), speed.hex()))
@@ -71,7 +71,30 @@ class Mi5Patcher(LKS32Patcher):
         assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs+2] = post
         ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
+
         return ret
 
     def remove_speed_limit_sport(self):
         return self.speed_limit_sport(kmh=36.7)
+
+    def motor_start_speed(self, kmh):
+        ret = []
+
+        sig = [0x1e, 0x29, 0x15, 0xda, None, None, 0x14, 0x29, 0x10, 0xd2, 0x49, 0x1c, None, None, 0x10, 0xe0]
+        ofs = find_pattern(self.data, sig)
+
+        speed_min = self._calc_speed(1, size=0)
+        for i in range(2):
+            speed = self._calc_speed(kmh, size=0)
+            if i == 0:
+                speed = (speed + speed_min) // 2  # hysteresis
+                speed = max(speed, speed_min)  # clamp
+
+            ofs += len(sig) * i
+            pre = self.data[ofs:ofs+2]
+            post = self.assembly(f"cmp r1,#{speed}")
+            assert len(pre) == len(post)
+            self.data[ofs:ofs+2] = post
+            ret.append((f"motor_start_speed_{i}", hex(ofs), pre.hex(), post.hex()))
+
+        return ret

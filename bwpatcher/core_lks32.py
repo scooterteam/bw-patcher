@@ -83,6 +83,12 @@ class LKS32Patcher(CorePatcher):
         self.data[ofs:ofs+len(sig)] = post
         return ("cruise_control_unlock", hex(ofs), pre.hex(), post.hex())
 
+    def _calc_speed(self, kmh, factor=10, size=4):
+        if size == 0:
+            return int(kmh*factor)
+
+        return int(kmh*factor).to_bytes(size, byteorder='little')
+
     def fix_checksum(self):
         sig = 'LKS32MC0'.encode()
         ofs = find_pattern(self.data, sig) - 0x8
