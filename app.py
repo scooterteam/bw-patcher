@@ -55,7 +55,7 @@ if st.checkbox('Cruise Control Enable (CCE)'):
 
 if scooter_model not in ["mi4", "mi4lite"]:
     if st.checkbox('Motor Start Speed (MSS)'):
-        mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 6.0, 0.1)
+        mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 5.0, 0.1)
         patches.append(f"mss={mss_speed}")
 
 

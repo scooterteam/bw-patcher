@@ -88,7 +88,6 @@ class Mi5Patcher(LKS32Patcher):
             speed = self._calc_speed(kmh, size=0)
             if i == 0:
                 speed = (speed + speed_min) // 2  # hysteresis
-                speed = max(speed, speed_min)  # clamp
 
             ofs += len(sig) * i
             pre = self.data[ofs:ofs+2]

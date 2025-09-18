@@ -64,16 +64,18 @@ class ES32Patcher(CorePatcher):
         return [("cruise_control_enable", hex(ofs), pre.hex(), post.hex())]
 
     def motor_start_speed(self, kmh):
+        res = []
+
         sigs = [
             [0x00, 0x99, 0x68, 0x29, 0x0e, 0xdb, 0x9a, 0x49, 0x09, 0x78, 0x01, 0x29, 0x09, 0xd0, 0x09, 0xe0],
             [0x00, 0x99, 0x3e, 0x29, 0x01, 0xda, 0xc4, None, 0xf8, 0xe7]
         ]
 
-        res = []
+        speed_min = self._calc_speed(1, size=0)
         for i, sig in enumerate(sigs):
             speed = self._calc_speed(kmh, size=0)
             if i == 1:
-                speed //= 2  # hysteresis
+                speed = (speed + speed_min) // 2  # hysteresis
 
             ofs = find_pattern(self.data, sig) + 2
             pre = self.data[ofs:ofs+2]
