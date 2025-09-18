@@ -1,0 +1,12 @@
+[theme]
+base="dark"
+primaryColor="#4CAF50"          # subtle accent green
+backgroundColor="#121212"       # deep dark gray
+secondaryBackgroundColor="#1E1E1E"  # slightly lighter gray for sidebar/cards
+textColor="#E0E0E0"             # soft white text
+font="sans serif"               # clean modern font
+baseFontSize=18
+
+[theme.sidebar]
+backgroundColor="#1E1E1E"
+textColor="#E0E0E0"

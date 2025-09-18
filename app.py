@@ -1,7 +1,50 @@
 from bwpatcher.utils import patch_firmware
 from bwpatcher.modules import ALL_MODULES
 from io import BytesIO
+import os
 import streamlit as st
+import requests
+
+REPO = "scooterteam00bf/bw-patcher"
+
+commit_sha = os.getenv("STREAMLIT_COMMIT_SHA")
+
+with st.sidebar:
+    st.title("BW Firmware Patcher")
+    st.image("logo.png")
+    st.title("📌 Last Git Commit")
+
+    if commit_sha:
+        url = f"https://api.github.com/repos/{REPO}/commits/{commit_sha}"
+        r = requests.get(url)
+        if r.status_code == 200:
+            commit = r.json()["commit"]
+            st.write(f"**SHA:** `{commit_sha}`")
+            st.write(f"**Message:** {commit['message']}")
+            st.write(f"**Author:** {commit['author']['name']}")
+            st.write(f"**Date:** {commit['author']['date']}")
+            st.write(f"[View on GitHub]({url.replace('api.github.com/repos', 'github.com')})")
+        else:
+            st.error("Could not fetch commit details from GitHub.")
+    else:
+        st.warning("Commit SHA not available in this environment.")
+
+
+st.text("⬇️ Acknowledge disclaimer and scroll down for main app ⬇️")
+st.warning("""### Disclaimer of Liability
+The patcher provided here ("the Patcher") is offered "as is" without any warranties of any kind, including but not limited to warranties of accuracy, completeness, reliability, merchantability, fitness for a particular purpose, or non-infringement. Users of the Patcher are solely responsible for ensuring that their use complies with all applicable laws, including copyright and intellectual property laws related to third-party proprietary software.
+
+**Notice on Third-Party Software:**  
+If the Patcher or its output interacts with or modifies proprietary software owned by third parties, it is the user's responsibility to obtain the necessary permissions or licenses from the respective owners of such proprietary software. The authors and contributors of the Patcher disclaim any liability for legal consequences arising from such use.
+
+### Non-Commercial Use
+
+The Pacher and any outputs generated from its use are provided for non-commercial, educational purposes only. Any commercial use, including but not limited to selling, licensing, or incorporating the Patcher or its outputs into a commercial product, is strictly prohibited.
+
+### Non-Endorsement
+
+The use of the Patcher does not imply any affiliation with, endorsement by, or sponsorship by the owners of any third-party proprietary software with which the Patcher may interact. All trademarks, service marks, and company names are the property of their respective owners and are used solely for identification purposes. The authors and contributors of the Patcher do not claim any rights over the proprietary software owned by third parties.""")
+
 
 
 title = "Brightway Firmware Patcher"
@@ -85,16 +128,3 @@ elif uploaded_file is None:
 elif not patches:
     st.warning("Please select at least one patch to apply.")
 
-st.markdown("""### Disclaimer of Liability
-The patcher provided here ("the Patcher") is offered "as is" without any warranties of any kind, including but not limited to warranties of accuracy, completeness, reliability, merchantability, fitness for a particular purpose, or non-infringement. Users of the Patcher are solely responsible for ensuring that their use complies with all applicable laws, including copyright and intellectual property laws related to third-party proprietary software.
-
-**Notice on Third-Party Software:**  
-If the Patcher or its output interacts with or modifies proprietary software owned by third parties, it is the user's responsibility to obtain the necessary permissions or licenses from the respective owners of such proprietary software. The authors and contributors of the Patcher disclaim any liability for legal consequences arising from such use.
-
-### Non-Commercial Use
-
-The Pacher and any outputs generated from its use are provided for non-commercial, educational purposes only. Any commercial use, including but not limited to selling, licensing, or incorporating the Patcher or its outputs into a commercial product, is strictly prohibited.
-
-### Non-Endorsement
-
-The use of the Patcher does not imply any affiliation with, endorsement by, or sponsorship by the owners of any third-party proprietary software with which the Patcher may interact. All trademarks, service marks, and company names are the property of their respective owners and are used solely for identification purposes. The authors and contributors of the Patcher do not claim any rights over the proprietary software owned by third parties.""")
