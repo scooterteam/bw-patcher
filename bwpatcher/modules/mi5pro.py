@@ -23,8 +23,11 @@ from bwpatcher.utils import find_pattern, extract_ldr_offset, offset_to_nearest_
 
 
 class Mi5proPatcher(ES32Patcher):
+    SIG_MODES = [ None, 0x49, 0x09, 0x88, None, 0xe7, 0x01, 0x88, None, 0xe7 ]
+
     def __init__(self, data):
         super().__init__(data)
+        self.ofs_modes = find_pattern(self.data, self.SIG_MODES)
 
     def region_free(self):
         res = []
@@ -67,11 +70,9 @@ class Mi5proPatcher(ES32Patcher):
     def speed_limit_drive(self, speed):
         res = []
         
-        sig = [ 0x77, 0x49, 0x09, 0x88, 0xd2, 0xe7 ]
-        ofs_ = find_pattern(self.data, sig)
-        pre_ = self.data[ofs_:ofs_+2]
+        pre_ = self.data[self.ofs_modes:self.ofs_modes+2]
 
-        ofs = ofs_ + 2
+        ofs = self.ofs_modes + 2
         pre = self.data[ofs:ofs+2]
         post = self.assembly("nop")
         self.data[ofs:ofs+2] = post
@@ -80,7 +81,7 @@ class Mi5proPatcher(ES32Patcher):
         try:
             disasm = self.disassembly(pre_)
             ofs_ldr = extract_ldr_offset(disasm)
-            ofs = offset_to_nearest_word(ofs_+ofs_ldr)
+            ofs = offset_to_nearest_word(self.ofs_modes+ofs_ldr)
             pre = self.data[ofs:ofs+4]
             post = self._calc_speed(speed, size=4)
             self.data[ofs:ofs+4] = post
@@ -98,13 +99,12 @@ class Mi5proPatcher(ES32Patcher):
     def speed_limit_sport(self, speed):
         res = []
         
-        sig = [ 0x87, 0x48, 0x01, 0x29, 0x2d, 0xd0 ]
+        sig = [ None, 0x48, 0x01, 0x29, None, 0xd0 ]
         ofs_ = find_pattern(self.data, sig)
         pre_ = self.data[ofs_:ofs_+2]
 
         dst_reg = 1
-        sig = [ 0x01, 0x88, 0xd0, 0xe7, 0x12, 0x78, 0x0b, 0x78 ]
-        ofs = find_pattern(self.data, sig)
+        ofs = self.ofs_modes + 6
         pre = self.data[ofs:ofs+2]
         post = self.assembly(f"mov r{dst_reg},r0")
         self.data[ofs:ofs+2] = post
