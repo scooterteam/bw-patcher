@@ -131,3 +131,12 @@ def offset_to_nearest_word(ofs):
         ofs += 2
         rem = ofs % 4
     return ofs
+
+def get_reg(disasm, default="r1"):
+    reg = default
+    try:
+        reg = disasm.split('\t')[1].split(',')[0]
+    except:
+        pass
+    return reg
+

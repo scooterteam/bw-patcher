@@ -19,15 +19,15 @@
 #
 
 from bwpatcher.core_lks32 import LKS32Patcher
-from bwpatcher.utils import find_pattern
+from bwpatcher.utils import find_pattern, get_reg
 
 
 class Mi4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)
-        self.sig_branch_src = [0x20, 0x31, 0x8E, 0x72, 0x0F, 0x26, 0xCE, 0x72]
+        self.sig_branch_src = [0x20, 0x31, None, 0x72, 0x0F, None, None, 0x72]
         self.sig_branch_dst = [0xF5, 0x31, 0x01, 0x83, 0x11, 0x48]
-
+    
     def dashboard_max_speed(self, speed: float):
         assert 1.0 <= speed <= 29.6, "Speed must be between 1.0 and 29.6km/h"
         speed = int(speed/2*10)
@@ -49,7 +49,7 @@ class Mi4Patcher(LKS32Patcher):
 
     def speed_limit_drive(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_dst, "speed_limit_fix")]
-        sig = [0xCA, 0x24, 0x04, 0x80, None, 0x4D, 0xB9, 0x21, 0xC5, 0x80]
+        sig = [0xCA, None, None, 0x80, None, None, 0xB9, 0x21, None, 0x80]
 
         ofs = find_pattern(self.data, sig)
         ofs_dst = find_pattern(self.data, self.sig_branch_src, start=ofs) + len(self.sig_branch_src) + 2
@@ -61,7 +61,8 @@ class Mi4Patcher(LKS32Patcher):
         ret.append(("speed_limit_drive_value", hex(speed_ofs), pre.hex(), speed.hex()))
 
         pre = self.data[ofs:ofs + 2]
-        post = self.assembly(f"ldr r4,[pc, #{ldr_ofs}]")
+        reg = get_reg(self.disassembly(pre), default="r4")
+        post = self.assembly(f"ldr {reg},[pc, #{ldr_ofs}]")
         assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs + 2] = post
         ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
@@ -69,7 +70,7 @@ class Mi4Patcher(LKS32Patcher):
 
     def speed_limit_sport(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_dst, "speed_limit_fix")]
-        sig = [0xfc, 0x21, 0x41, 0x80, 0x78, 0x21, 0x81, 0x81]
+        sig = [0xFC, 0x21, 0x41, 0x80, 0x78, 0x21, 0x81, 0x81]
 
         ofs = find_pattern(self.data, sig)
         ofs_dst = find_pattern(self.data, self.sig_branch_src, start=ofs) + len(self.sig_branch_src) + 6
@@ -81,7 +82,8 @@ class Mi4Patcher(LKS32Patcher):
         ret.append(("speed_limit_sport_value", hex(speed_ofs), pre.hex(), speed.hex()))
 
         pre = self.data[ofs:ofs + 2]
-        post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")
+        reg = get_reg(self.disassembly(pre), default="r1")
+        post = self.assembly(f"ldr {reg},[pc, #{ldr_ofs}]")
         assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs + 2] = post
         ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
