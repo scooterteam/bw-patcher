@@ -4,6 +4,12 @@ Firmware patcher for scooters manufactured by Brightway.
 # Setup
 This patcher requires Python and the `keystone-engine` package installed.
 
+## Using Poetry (recommended)
+```bash
+poetry install
+```
+
+## Using pip
 ```bash
 pip install -r requirements.txt
 ```
@@ -24,7 +30,7 @@ Currently, only the Mi4 is supported. The next models maybe soon.
 # Usage
 ## CLI
 ```bash
-python -m bwpatcher --help
+poetry run python -m bwpatcher --help
 usage: __main__.py [-h] {mi4,mi4pro2nd,ultra4} infile outfile patches
 
 positional arguments:
@@ -50,23 +56,23 @@ poetry run streamlit run app.py
 #### Mi4
 RSLS and DMS (22.0km/h):
 ```bash
-python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls,dms=22.0
+poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls,dms=22.0
 ```
 
 SLD (25.5km/h):
 ```bash
-python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin sld=25.5
+poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin sld=25.5
 ```
 
 RSLS:
 ```bash
-python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls
+poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls
 ```
 
 #### Mi4Pro2nd
 RFM + RSLS + CHK:
 ```bash
-python -m bwpatcher mi4pro2nd mcu_update.bin patched_mcu_update.bin rfm,rsls,chk
+poetry run python -m bwpatcher mi4pro2nd mcu_update.bin patched_mcu_update.bin rfm,rsls,chk
 ```
 Important: CHK must always come last!
 
