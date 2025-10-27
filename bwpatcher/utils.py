@@ -32,6 +32,7 @@ class SignatureException(Exception):
 patch_map = {
     "rsls": lambda patcher: patcher.remove_speed_limit_sport,
     "dms": lambda patcher: patcher.dashboard_max_speed,
+    "slp": lambda patcher: patcher.speed_limit_ped,
     "sld": lambda patcher: patcher.speed_limit_drive,
     "sls": lambda patcher: patcher.speed_limit_sport,
     "rfm": lambda patcher: patcher.region_free,

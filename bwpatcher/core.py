@@ -55,6 +55,9 @@ class CorePatcher():
     def dashboard_max_speed(self, speed: float):
         raise NotImplementedError()
 
+    def speed_limit_ped(self, kmh: float):
+        raise NotImplementedError()
+
     def speed_limit_drive(self, kmh: float):
         raise NotImplementedError()
 

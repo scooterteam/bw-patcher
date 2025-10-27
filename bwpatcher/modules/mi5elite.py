@@ -141,7 +141,7 @@ class Mi5elitePatcher(CoreN32Patcher):
             check_{mode}:
             cmp r0, #{mode_num}
             bne {next_label}
-            movs.w r0, #{speed}
+            movw r0, #{speed}
             b {hex(self._patched_path_address)}
             """
 
