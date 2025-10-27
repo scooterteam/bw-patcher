@@ -37,6 +37,7 @@ patch_map = {
     "rfm": lambda patcher: patcher.region_free,
     "fdv": lambda patcher: patcher.fake_drv_version,
     "chk": lambda patcher: patcher.fix_checksum,
+    "img": lambda patcher: patcher.create_full_image,
     "mss": lambda patcher: patcher.motor_start_speed,
     "cce": lambda patcher: patcher.cruise_control_enable,
 }
@@ -139,4 +140,3 @@ def get_reg(disasm, default="r1"):
     except:
         pass
     return reg
-

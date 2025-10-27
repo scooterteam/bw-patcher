@@ -42,8 +42,8 @@ class CorePatcher():
 
         return chk.to_bytes(2, byteorder='big')
 
-    def assembly(self, code):
-        return bytes(self.ks.asm(code)[0])
+    def assembly(self, code, addr=0):
+        return bytes(self.ks.asm(code, addr)[0])
 
     def disassembly(self, code_bytes: bytes):
         """Disassemble bytes and return code"""

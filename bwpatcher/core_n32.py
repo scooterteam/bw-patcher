@@ -36,9 +36,58 @@ class CoreN32Patcher(CorePatcher):
     FIRMWARE_SIZE = 0x9880      # Expected firmware size (39040 bytes)
 
     def __init__(self, data):
-        super().__init__(data)
         self.verbose = False
+        self.image_header = None
+        self.image_footer = None
 
+        firmware_data = data
+        # Handle full image, extract firmware if applicable
+        if len(data) >= self.FIRMWARE_OFFSET + self.FIRMWARE_SIZE:
+            firmware_data, self.image_header, self.image_footer = self.extract_firmware_from_image(data)
+
+        # Detect if the original firmware was encrypted
+        self.was_encrypted = self.is_encrypted(firmware_data)
+
+        # If encrypted, decrypt it for patching
+        if self.was_encrypted:
+            firmware_data = self.decrypt_data(firmware_data)
+
+        super().__init__(firmware_data)
+
+    def fix_checksum(self, start_ofs=None):
+        """
+        Finalize the patch by encrypting the firmware, patching the CRC,
+        and re-inserting it into the full image if necessary.
+        This overrides the base class's fix_checksum and is triggered by the 'chk' patch.
+        """
+        # self.data is patched firmware. It will be unencrypted unless 'enc' patch was used.
+        # If the original firmware was encrypted, we must re-encrypt before patching the CRC.
+        if self.was_encrypted and not self.is_encrypted():
+            self.encrypt_firmware()
+
+        # Get values for return tuple, before patching CRC
+        fw_size = self.calculate_firmware_size(self.data)
+        offset = fw_size - 2
+        chksum_before = self.data[offset:offset+2].hex()
+        
+        # Patch CRC
+        self.patch_firmware_crc()
+
+        # Get chksum_after
+        chksum_after = self.data[offset:offset+2].hex()
+
+        return ("fix_checksum", hex(offset), chksum_before, chksum_after)
+
+    def create_full_image(self):
+        """
+        Re-assemble the full image by combining the header, patched firmware, and footer.
+        This is intended to be called after 'chk' has finalized the firmware.
+        """
+        if self.image_header is not None and self.image_footer is not None:
+            self.data = self.insert_firmware_into_image(self.data, self.image_header, self.image_footer)
+            return ("create_full_image", "0x0", "N/A", "Image re-assembled")
+        return ("create_full_image", "0x0", "N/A", "No header/footer found, skipping.")
+        
     @classmethod
     def _calc_speed(cls, speed, factor=10, size=1):
         """
@@ -111,31 +160,34 @@ class CoreN32Patcher(CorePatcher):
         """
         data = bytes(firmware_data)
 
-        # Find the longest consecutive AA padding sequence
-        max_aa_length = 0
-        max_aa_end = 0
+        # Find the longest consecutive padding sequence (0xAA for encrypted, 0x00 for decrypted)
+        max_padding_length = 0
+        max_padding_end = 0
+        padding_byte_found = None
 
         i = 0
         while i < len(data):
-            if data[i] == 0xAA:
+            padding_byte = data[i]
+            if padding_byte == 0xAA or padding_byte == 0x00:
                 start = i
-                while i < len(data) and data[i] == 0xAA:
+                while i < len(data) and data[i] == padding_byte:
                     i += 1
                 length = i - start
 
                 # Track longest sequence (must be > 500 bytes)
-                if length > max_aa_length and length > 500:
-                    max_aa_length = length
-                    max_aa_end = i
+                if length > max_padding_length and length > 500:
+                    max_padding_length = length
+                    max_padding_end = i
+                    padding_byte_found = padding_byte
             else:
                 i += 1
 
-        if max_aa_end > 0:
+        if max_padding_end > 0:
             # Round up to nearest 128-byte boundary
-            fw_size = ((max_aa_end + 127) // 128) * 128
+            fw_size = ((max_padding_end + 127) // 128) * 128
 
             if self.verbose:
-                print(f"Found {max_aa_length} consecutive AA bytes ending at 0x{max_aa_end:X}")
+                print(f"Found {max_padding_length} consecutive 0x{padding_byte_found:02X} bytes ending at 0x{max_padding_end:X}")
                 print(f"Rounded up to: 0x{fw_size:X}")
             return fw_size
         else:
@@ -198,6 +250,7 @@ class CoreN32Patcher(CorePatcher):
         Returns:
             bytearray: Encrypted data
         """
+        print("Encrypting firmware...")
         encrypted = bytearray(self.encrypt_data(self.data))
         self.data = encrypted
         return encrypted
@@ -212,18 +265,6 @@ class CoreN32Patcher(CorePatcher):
         decrypted = bytearray(self.decrypt_data(self.data))
         self.data = decrypted
         return decrypted
-
-    def encrypt_and_patch(self):
-        """
-        Encrypt the data and patch the embedded CRC.
-        Assumes self.data contains raw (unencrypted) data.
-
-        Returns:
-            bytearray: Encrypted and CRC-patched data
-        """
-        self.encrypt_firmware()
-        self.patch_firmware_crc()
-        return self.data
 
     def verify_firmware_crc(self, firmware_data=None):
         """
@@ -345,63 +386,6 @@ class CoreN32Patcher(CorePatcher):
 
         return full_image
 
-    def apply_patches(self, motor_start_kmh=1.0):
-        """
-        Apply all defined patches to the firmware data using signature matching.
-
-        This applies:
-        1. Speed limit fix (branch modification)
-        2. Remove sport mode speed limit
-        3. Motor start speed adjustment
-
-        Args:
-            motor_start_kmh: Motor start speed in km/h (default 1.0)
-
-        Returns:
-            list: List of tuples (patch_name, offset, old_hex, new_hex) for each patch applied
-        """
-        results = []
-
-        results.extend(self._speed_limit_fix())
-        results.extend(self.remove_speed_limit_sport())
-        results.extend(self.motor_start_speed(motor_start_kmh))
-
-        return results
-
-    def patch_raw(self, motor_start_kmh=1.0):
-        """
-        Apply binary patches to raw (unencrypted) firmware data.
-
-        Args:
-            motor_start_kmh: Motor start speed in km/h (default 1.0)
-
-        Returns:
-            tuple: (patch_results, patched_unencrypted_data)
-        """
-        patch_results = self.apply_patches(motor_start_kmh=motor_start_kmh)
-        return (patch_results, self.data)
-
-    def patch_and_encrypt(self, motor_start_kmh=1.0):
-        """
-        Complete patching workflow:
-        1. Apply binary patches
-        2. Encrypt the data
-        3. Patch CRC
-
-        Args:
-            motor_start_kmh: Motor start speed in km/h (default 1.0)
-
-        Returns:
-            tuple: (patch_results, encrypted_and_crc_patched_data)
-        """
-        # Apply binary patches to raw data
-        patch_results = self.apply_patches(motor_start_kmh=motor_start_kmh)
-
-        # Encrypt and patch CRC (from CoreN32Patcher)
-        encrypted_data = self.encrypt_and_patch()
-
-        return (patch_results, encrypted_data)
-
     @classmethod
     def patch_full_image(cls, full_image_data, **patches):
         """
@@ -414,7 +398,6 @@ class CoreN32Patcher(CorePatcher):
 
         Args:
             full_image_data: Full image data as bytes or bytearray
-            motor_start_kmh: Motor start speed in km/h (default 1.0)
 
         Returns:
             tuple: (patch_results, patched_full_image_data, workflow_log)
@@ -449,20 +432,18 @@ class CoreN32Patcher(CorePatcher):
         workflow_log['patches_applied'] = len(patch_results)
 
         # Step 4: Encrypt and patch CRC
-        encrypted_firmware = patcher.encrypt_and_patch()
+        patcher.encrypt_firmware()
+        patcher.patch_firmware_crc()
         workflow_log['encryption'] = 'performed'
         workflow_log['crc_patched'] = True
 
         # Step 5: Insert back into full image
         if len(image_header) and len(image_footer):
             patched_full_image = cls.insert_firmware_into_image(
-                encrypted_firmware,
-                image_header,
-                image_footer
+                patcher.data, image_header, image_footer
             )
         else:
-            patched_full_image = encrypted_firmware
-
+            patched_full_image = patcher.data
         workflow_log['final_image_size'] = len(patched_full_image)
 
         return (patch_results, patched_full_image, workflow_log)
