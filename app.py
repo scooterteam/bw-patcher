@@ -5,40 +5,112 @@ import streamlit as st
 
 
 title = "Brightway Firmware Patcher"
-# Set the app title in the browser's tab
 st.set_page_config(
     page_title=title,
-    page_icon="🛴"
+    page_icon="🛴",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# App title
-st.title(title)
-
-# Description
+# Custom CSS for cleaner styling
 st.markdown("""
-This app allows you to patch the firmware for Brightway scooters.
-You can apply several patches, such as removing the speed limit in Sport mode or changing the maximum speed on the dashboard.
-""")
+<style>
+    /* Hide default Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
 
-# Upload firmware file
-st.subheader('Upload Firmware File')
-uploaded_file = st.file_uploader("Choose a firmware file...", type=["bin"])
+    /* Better spacing */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 800px;
+    }
 
-# Select scooter model
-st.subheader('Select Scooter Model')
-scooter_model = st.selectbox('Choose the model of your scooter', ALL_MODULES)
+    /* Streamlined headers */
+    h1 {
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
 
-# Choose patches to apply
-st.subheader('Select Patches')
+    h2, h3 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header
+st.title("🛴 Brightway Firmware Patcher")
+st.caption("Customize and optimize your scooter firmware")
+
+# Legal Disclaimer at top
+with st.expander("⚖️ Legal Disclaimer & Terms of Use - READ BEFORE USING", expanded=False):
+    st.markdown("""
+    ### Disclaimer of Liability
+
+    The patcher provided here ("the Patcher") is offered **"as is"** without any warranties of any kind,
+    including but not limited to warranties of accuracy, completeness, reliability, merchantability,
+    fitness for a particular purpose, or non-infringement. Users of the Patcher are solely responsible
+    for ensuring that their use complies with all applicable laws, including copyright and intellectual
+    property laws related to third-party proprietary software.
+
+    #### 📌 Notice on Third-Party Software
+    If the Patcher or its output interacts with or modifies proprietary software owned by third parties,
+    it is the user's responsibility to obtain the necessary permissions or licenses from the respective
+    owners of such proprietary software. The authors and contributors of the Patcher disclaim any
+    liability for legal consequences arising from such use.
+
+    #### 🎓 Non-Commercial Use
+    The Patcher and any outputs generated from its use are provided for **non-commercial, educational
+    purposes only**. Any commercial use, including but not limited to selling, licensing, or incorporating
+    the Patcher or its outputs into a commercial product, is strictly prohibited.
+
+    #### 🏷️ Non-Endorsement
+    The use of the Patcher does not imply any affiliation with, endorsement by, or sponsorship by the
+    owners of any third-party proprietary software with which the Patcher may interact. All trademarks,
+    service marks, and company names are the property of their respective owners and are used solely for
+    identification purposes. The authors and contributors of the Patcher do not claim any rights over
+    the proprietary software owned by third parties.
+    """)
+
+st.divider()
+
+# Single column layout
+st.subheader("📁 Upload Firmware")
+uploaded_file = st.file_uploader(
+    "Choose your .bin firmware file",
+    type=["bin"]
+)
+
+st.subheader("🛴 Scooter Model")
+scooter_model = st.selectbox(
+    "Select your model",
+    ALL_MODULES
+)
+
+if uploaded_file and scooter_model:
+    st.success(f"Ready to configure patches for {scooter_model}")
+
+st.divider()
+
+# Patches section
+st.subheader("🔧 Configure Patches")
+
 patches = []
 
+# Speed limit patches
 if st.checkbox('Speed Limit Sport (SLS)'):
-    sls_speed = st.slider("Max Speed (SLS)", 1.0, 39.5, 25.5, 0.1)
+    sls_speed = st.slider("Max Speed (SLS)", 1.0, 35.0, 25.0, 0.1)
     patches.append(f'sls={sls_speed}')
 
 if st.checkbox('Speed Limit Drive (SLD)'):
-    sld_speed = st.slider("Max Speed (SLD)", 1.0, 39.5, 15.5, 0.1)
+    sld_speed = st.slider("Max Speed (SLD)", 1.0, 35.0, 15.0, 0.1)
     patches.append(f'sld={sld_speed}')
+
+if scooter_model in ['mi5elite']:
+    if st.checkbox('Speed Limit Pedestrian (SLP)'):
+        slp_speed = st.slider("Max Speed (SLP)", 1.0, 35.0, 6.0, 0.1)
+        patches.append(f'slp={slp_speed}')
 
 if scooter_model in ['mi4', 'ultra4']:
     if st.checkbox('Dashboard Max Speed (DMS)'):
@@ -48,10 +120,12 @@ if scooter_model in ['mi4', 'ultra4']:
 if scooter_model not in ["mi4pro2nd", "mi5pro"]:
     if st.checkbox('Fake Firmware Version (FDV)'):
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
-        patches.append(f"fdv={fdv_version}")
+        if len(fdv_version) == 4 and fdv_version.isdigit():
+            patches.append(f"fdv={fdv_version}")
 
-if st.checkbox('Cruise Control Enable (CCE)'):
-    patches.append("cce")
+if scooter_model not in ["mi5elite"]:
+    if st.checkbox('Cruise Control Enable (CCE)'):
+        patches.append("cce")
 
 if scooter_model not in ["mi4", "mi4lite"]:
     if st.checkbox('Motor Start Speed (MSS)'):
@@ -59,42 +133,46 @@ if scooter_model not in ["mi4", "mi4lite"]:
         patches.append(f"mss={mss_speed}")
 
 
-# Process and download
+# Summary and action section
+st.divider()
+
+if patches:
+    st.info(f"{len(patches)} patch(es) selected")
+else:
+    st.info("No patches selected")
+
 if uploaded_file is not None and patches:
     if patches[-1] != "chk":
         patches.append("chk")
 
-    # Read the uploaded file into memory
-    input_firmware = uploaded_file.read()
+    # Process button
+    if st.button("Apply Patches", type="primary", use_container_width=True):
+        with st.spinner("Applying patches..."):
+            # Read the uploaded file into memory
+            input_firmware = uploaded_file.read()
 
-    # Apply the selected patches
-    patched_firmware = patch_firmware(scooter_model, input_firmware, patches)
-    st.success("Patching complete!")
+            # Apply the selected patches
+            try:
+                patched_firmware = patch_firmware(scooter_model, input_firmware, patches)
+                st.success("Patching complete!")
 
-    # Provide the user with a link to download the patched firmware
-    st.download_button(
-        label="Download Patched Firmware",
-        data=BytesIO(patched_firmware),
-        file_name="patched_firmware.bin",
-        mime="application/octet-stream"
-    )
+                # Provide download button
+                st.download_button(
+                    label="Download Patched Firmware",
+                    data=BytesIO(patched_firmware),
+                    file_name=f"patched_{scooter_model}_firmware.bin",
+                    mime="application/octet-stream",
+                    type="primary",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"Patching failed: {str(e)}")
 
 elif uploaded_file is None:
-    st.warning("Please upload a firmware file.")
-
+    st.warning("Please upload a firmware file")
 elif not patches:
-    st.warning("Please select at least one patch to apply.")
+    st.warning("Please select at least one patch")
 
-st.markdown("""### Disclaimer of Liability
-The patcher provided here ("the Patcher") is offered "as is" without any warranties of any kind, including but not limited to warranties of accuracy, completeness, reliability, merchantability, fitness for a particular purpose, or non-infringement. Users of the Patcher are solely responsible for ensuring that their use complies with all applicable laws, including copyright and intellectual property laws related to third-party proprietary software.
-
-**Notice on Third-Party Software:**  
-If the Patcher or its output interacts with or modifies proprietary software owned by third parties, it is the user's responsibility to obtain the necessary permissions or licenses from the respective owners of such proprietary software. The authors and contributors of the Patcher disclaim any liability for legal consequences arising from such use.
-
-### Non-Commercial Use
-
-The Pacher and any outputs generated from its use are provided for non-commercial, educational purposes only. Any commercial use, including but not limited to selling, licensing, or incorporating the Patcher or its outputs into a commercial product, is strictly prohibited.
-
-### Non-Endorsement
-
-The use of the Patcher does not imply any affiliation with, endorsement by, or sponsorship by the owners of any third-party proprietary software with which the Patcher may interact. All trademarks, service marks, and company names are the property of their respective owners and are used solely for identification purposes. The authors and contributors of the Patcher do not claim any rights over the proprietary software owned by third parties.""")
+# Footer
+st.divider()
+st.caption("For educational and non-commercial use only")
