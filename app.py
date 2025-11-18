@@ -39,38 +39,83 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.title("🛴 Brightway Firmware Patcher")
-st.caption("Customize and optimize your scooter firmware")
+# MANDATORY DISCLAIMER - Must be accepted before using the tool
+if 'disclaimer_accepted' not in st.session_state:
+    st.session_state.disclaimer_accepted = False
 
-# Legal Disclaimer at top
-with st.expander("⚖️ Legal Disclaimer & Terms of Use - READ BEFORE USING", expanded=False):
+if not st.session_state.disclaimer_accepted:
+    st.title("⚠️ LEGAL DISCLAIMER - READ CAREFULLY")
+
+    st.error("**You must read and accept this disclaimer before using this tool.**")
+
     st.markdown("""
-    ### Disclaimer of Liability
+    ## Educational and Research Use Only
 
-    The patcher provided here ("the Patcher") is offered **"as is"** without any warranties of any kind,
-    including but not limited to warranties of accuracy, completeness, reliability, merchantability,
-    fitness for a particular purpose, or non-infringement. Users of the Patcher are solely responsible
-    for ensuring that their use complies with all applicable laws, including copyright and intellectual
-    property laws related to third-party proprietary software.
+    **This tool is for EDUCATIONAL and RESEARCH purposes only.**
 
-    #### 📌 Notice on Third-Party Software
-    If the Patcher or its output interacts with or modifies proprietary software owned by third parties,
-    it is the user's responsibility to obtain the necessary permissions or licenses from the respective
-    owners of such proprietary software. The authors and contributors of the Patcher disclaim any
-    liability for legal consequences arising from such use.
+    ### 🔓 Our Principles
 
-    #### 🎓 Non-Commercial Use
-    The Patcher and any outputs generated from its use are provided for **non-commercial, educational
-    purposes only**. Any commercial use, including but not limited to selling, licensing, or incorporating
-    the Patcher or its outputs into a commercial product, is strictly prohibited.
+    **You own what you buy.** This tool helps you understand and modify devices you own.
+    However, modifications may be dangerous and illegal.
 
-    #### 🏷️ Non-Endorsement
-    The use of the Patcher does not imply any affiliation with, endorsement by, or sponsorship by the
-    owners of any third-party proprietary software with which the Patcher may interact. All trademarks,
-    service marks, and company names are the property of their respective owners and are used solely for
-    identification purposes. The authors and contributors of the Patcher do not claim any rights over
-    the proprietary software owned by third parties.
+    ### ⚠️ Safety Warnings
+
+    **Modifying device firmware:**
+    - May void your warranty
+    - May violate local laws and regulations
+    - Can bypass manufacturer safety features - **serious injury risk**
+    - Modified devices may be illegal to operate
+    - **YOU assume ALL liability** for injuries, accidents, and legal consequences
+
+    ### 🚫 No Commercial Use
+
+    - This software is **CC-BY-NC-SA licensed**
+    - Commercial use is **strictly prohibited**
+    - You may NOT sell modified firmware, patching services, or derivative tools
+
+    ### 📋 No Warranty
+
+    - Provided **AS-IS** with no guarantees
+    - Authors accept **NO LIABILITY** for any consequences
+    - You are solely responsible for compliance with all laws
+
+    ### 📄 Full Terms
+
+    See [LEGAL_DISCLAIMER.md](https://github.com/scooterteam/bw-flasher/blob/main/bw-patcher/LEGAL_DISCLAIMER.md)
+    and [PRINCIPLES.md](https://github.com/scooterteam/bw-flasher/blob/main/bw-patcher/PRINCIPLES.md) for complete terms.
+
+    ---
+
+    **By clicking "I Understand & Accept All Risks", you acknowledge:**
+    - You have read and understood this disclaimer
+    - You accept all risks and responsibilities
+    - You will use this tool legally and responsibly
+    - You will not use this tool for commercial purposes
+    """)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("❌ I Do Not Accept - Exit", use_container_width=True, type="secondary"):
+            st.error("You must accept the disclaimer to use this tool.")
+            st.stop()
+
+    with col2:
+        if st.button("✅ I Understand & Accept All Risks", use_container_width=True, type="primary"):
+            st.session_state.disclaimer_accepted = True
+            st.rerun()
+
+    st.stop()
+
+# Header (only shown after disclaimer is accepted)
+st.title("🛴 Brightway Firmware Patcher")
+st.caption("Research tool for firmware analysis")
+
+# Collapsible reference to full disclaimer
+with st.expander("⚖️ View Legal Disclaimer Again"):
+    st.markdown("""
+    See [LEGAL_DISCLAIMER.md](https://github.com/scooterteam/bw-flasher/blob/main/bw-patcher/LEGAL_DISCLAIMER.md)
+    for complete legal terms. By using this tool, you accept all risks and responsibilities.
     """)
 
 st.divider()
@@ -117,7 +162,7 @@ if scooter_model in ['mi4', 'ultra4']:
         dms_speed = st.slider("Max Speed (DMS)", 1.0, 29.6, 22.0, 0.1)
         patches.append(f'dms={dms_speed}')
 
-if scooter_model not in ["mi4pro2nd", "mi5pro"]:
+if scooter_model not in ["mi4pro2nd", "mi5pro", "mi5elite"]:
     if st.checkbox('Fake Firmware Version (FDV)'):
         fdv_version = st.text_input("Firmware Version (4 digits)", value="0000", max_chars=4)
         if len(fdv_version) == 4 and fdv_version.isdigit():
@@ -175,4 +220,4 @@ elif not patches:
 
 # Footer
 st.divider()
-st.caption("For educational and non-commercial use only")
+st.caption("For educational and research purposes only • CC-BY-NC-SA 4.0 • See LEGAL_DISCLAIMER.md")

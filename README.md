@@ -1,80 +1,93 @@
 # bw-patcher
-Firmware patcher for scooters manufactured by Brightway.
 
-# Setup
+Research tool for analyzing and modifying firmware parameters on Brightway-based controllers.
+
+## ⚠️ IMPORTANT SAFETY WARNING
+
+**Modifying device firmware can be dangerous and illegal.**
+
+- May void your warranty
+- May violate local laws and regulations
+- Creates serious safety risks by bypassing manufacturer safety features
+- Modified devices may be illegal to operate
+- You assume ALL liability for injuries, accidents, and legal consequences
+
+**Use at your own risk. This software is for educational and research purposes only.**
+
+👉 Read the full [PRINCIPLES.md](PRINCIPLES.md) and [LEGAL_DISCLAIMER.md](LEGAL_DISCLAIMER.md) before using this software.
+
+## Setup
+
 This patcher requires Python and the `keystone-engine` package installed.
 
-## Using Poetry (recommended)
+### Using Poetry (recommended)
 ```bash
 poetry install
 ```
 
-## Using pip
+### Using pip
 ```bash
 pip install -r requirements.txt
 ```
 
-# Supported models
-Currently, only the Mi4 is supported. The next models maybe soon.
+## Supported Models
 
-# Available patches
-- rsls (Remove Speed Limit Sport) - removes the speed limiter on sport mode (technically sets it to a value that the scooter will never reach),
-- dms (Dashboard Max Speed) (from 1.0km/h to 29.6km/h) - spoofs the maximum speed reached by the scooter on the dashboard,
-- sls (Speed Limit Sport) (from 1.0km/h to 39.5km/h) - allows to change the maximum speed on Sport mode.
-- sld (Speed Limit Drive) (from 1.0km/h to 25.5km/h) - allows to change the maximum speed on Drive mode.
-- rfm (Region Free) - remove regional restrictions such as speed and acceleration nerf.
-- fdv (Fake DRV Version) - allows to change the DRV version. Can prevent unwanted updates.
-- mss (Motor Start Speed) - Minimum required speed before the motor will start.
-- chk (Fix Checksum) - update checksum for the patched bytes (only required by mi4pro2nd).
+- Mi4
+- Mi4Pro2nd
+- Mi4Lite
+- Mi5
+- Mi5Pro
+- Mi5Max
+- Mi5Elite
+- Ultra4
 
-# Usage
-## CLI
+## Available Modifications
+
+This tool can modify various firmware parameters. The specific parameters available depend on the device model and firmware version.
+
+**WARNING:** Modifying firmware parameters may bypass safety features, void warranties, and create legal liability. Users assume all responsibility.
+
+## Usage
+
+### CLI
 ```bash
 poetry run python -m bwpatcher --help
-usage: __main__.py [-h] {mi4,mi4pro2nd,ultra4} infile outfile patches
+usage: __main__.py [-h] {model} infile outfile patches
 
 positional arguments:
-  {mi4,mi4pro2nd,ultra4}
-                        Dev name of scooter.
-  infile
-  outfile
-  {rsls,dms,sls,sld,rfm,fdv,mss,chk}
-                        The patches that are to be applied.
+  {model}       Device model (see supported models above)
+  infile        Input firmware file
+  outfile       Output firmware file
+  patches       Comma-separated list of patches to apply
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help    show this help message and exit
 ```
 
-## GUI
+### GUI
 ```bash
-poetry install
 poetry run streamlit run app.py
 ```
 
-### Examples
+The GUI provides an interactive interface for selecting firmware modifications. A legal disclaimer must be accepted before use.
 
-#### Mi4
-RSLS and DMS (22.0km/h):
+### Example Usage
+
+Apply modifications to firmware:
 ```bash
-poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls,dms=22.0
+poetry run python -m bwpatcher mi4 firmware.bin firmware_modified.bin patch1,patch2
 ```
 
-SLD (25.5km/h):
-```bash
-poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin sld=25.5
-```
-
-RSLS:
-```bash
-poetry run python -m bwpatcher mi4 my_dump.bin my_patched_dump.bin rsls
-```
-
-#### Mi4Pro2nd
-RFM + RSLS + CHK:
-```bash
-poetry run python -m bwpatcher mi4pro2nd mcu_update.bin patched_mcu_update.bin rfm,rsls,chk
-```
-Important: CHK must always come last!
+**Note:** Always maintain backups of original firmware before modification.
 
 ## License
-Licensed under CC BY-NC-SA 4.0 (NonCommercial, ShareAlike), see [LICENSE](LICENSE).
+
+Licensed under CC BY-NC-SA 4.0 (NonCommercial, ShareAlike). See [LICENSE](LICENSE) for full terms.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to this project.
+
+## Disclaimer
+
+This tool is provided for educational and research purposes only. The authors accept no liability for any consequences of using this software. See [LEGAL_DISCLAIMER.md](LEGAL_DISCLAIMER.md) for complete terms.
