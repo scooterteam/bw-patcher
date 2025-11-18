@@ -159,43 +159,6 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Firmware files - keep existing ones but ignore new ones
-# (existing .bin files are tracked, new ones will be ignored)
-
-# Test outputs and temporary files
-test_*.bin
-tmp*.bin
-tmp_*.bin
-debug_*.bin
-*_output*.bin
-
-# Specific patterns for generated files
-*_patched*.bin
-*_encrypted*.bin
-*_decrypted*.bin
-*_extracted*.bin
-*flashable*.bin
-
-# Alternative firmware formats
-*.hex
-*.fw
-*.firmware
-
-# Logic analyzer captures
-*.csv
-*.sal
-*.pcap
-*.pcapng
-
-# Debug logs
-*.log
-on_off.csv.log
-
-# Documentation that may contain sensitive info
-*USAGE.md
-*-protocol.md
 
 # Debug directory
 debug/
@@ -203,4 +166,3 @@ debug/
 # IDE-specific
 .vscode/
 .idea/
-.streamlit/
