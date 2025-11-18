@@ -109,7 +109,7 @@ if not st.session_state.disclaimer_accepted:
 
 # Header (only shown after disclaimer is accepted)
 st.title("🛴 Brightway Firmware Patcher")
-st.caption("Research tool for firmware analysis")
+st.caption("Research tool")
 
 # Collapsible reference to full disclaimer
 with st.expander("⚖️ View Legal Disclaimer Again"):
