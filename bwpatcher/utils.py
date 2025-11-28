@@ -32,11 +32,13 @@ class SignatureException(Exception):
 patch_map = {
     "rsls": lambda patcher: patcher.remove_speed_limit_sport,
     "dms": lambda patcher: patcher.dashboard_max_speed,
+    "slp": lambda patcher: patcher.speed_limit_ped,
     "sld": lambda patcher: patcher.speed_limit_drive,
     "sls": lambda patcher: patcher.speed_limit_sport,
     "rfm": lambda patcher: patcher.region_free,
     "fdv": lambda patcher: patcher.fake_drv_version,
     "chk": lambda patcher: patcher.fix_checksum,
+    "img": lambda patcher: patcher.create_full_image,
     "mss": lambda patcher: patcher.motor_start_speed,
     "cce": lambda patcher: patcher.cruise_control_enable,
 }
@@ -139,4 +141,3 @@ def get_reg(disasm, default="r1"):
     except:
         pass
     return reg
-

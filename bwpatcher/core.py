@@ -42,8 +42,8 @@ class CorePatcher():
 
         return chk.to_bytes(2, byteorder='big')
 
-    def assembly(self, code):
-        return bytes(self.ks.asm(code)[0])
+    def assembly(self, code, addr=0):
+        return bytes(self.ks.asm(code, addr)[0])
 
     def disassembly(self, code_bytes: bytes):
         """Disassemble bytes and return code"""
@@ -53,6 +53,9 @@ class CorePatcher():
         return "\n".join(instructions)
 
     def dashboard_max_speed(self, speed: float):
+        raise NotImplementedError()
+
+    def speed_limit_ped(self, kmh: float):
         raise NotImplementedError()
 
     def speed_limit_drive(self, kmh: float):
