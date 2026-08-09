@@ -152,19 +152,20 @@ st.divider()
 st.subheader("🔧 Configure Patches")
 
 patches = []
+speed_limit_max = 25.5 if scooter_model == 'mi3lite' else 35.0
 
 # Speed limit patches
 if st.checkbox('Speed Limit Sport (SLS)'):
-    sls_speed = st.slider("Max Speed (SLS)", 1.0, 35.0, 25.0, 0.1)
+    sls_speed = st.slider("Max Speed (SLS)", 1.0, speed_limit_max, 25.0, 0.1)
     patches.append(f'sls={sls_speed}')
 
 if st.checkbox('Speed Limit Drive (SLD)'):
-    sld_speed = st.slider("Max Speed (SLD)", 1.0, 35.0, 15.0, 0.1)
+    sld_speed = st.slider("Max Speed (SLD)", 1.0, speed_limit_max, 15.0, 0.1)
     patches.append(f'sld={sld_speed}')
 
-if scooter_model in ['mi5elite']:
+if scooter_model in ['mi5elite', 'mi3lite']:
     if st.checkbox('Speed Limit Pedestrian (SLP)'):
-        slp_speed = st.slider("Max Speed (SLP)", 1.0, 35.0, 6.0, 0.1)
+        slp_speed = st.slider("Max Speed (SLP)", 1.0, speed_limit_max, 6.0, 0.1)
         patches.append(f'slp={slp_speed}')
 
 if scooter_model in ['mi4', 'ultra4']:
@@ -182,7 +183,7 @@ if scooter_model not in ["mi5elite"]:
     if st.checkbox('Cruise Control Enable (CCE)'):
         patches.append("cce")
 
-if scooter_model not in ["mi4", "mi4lite"]:
+if scooter_model not in ["mi3lite", "mi4", "mi4lite"]:
     if st.checkbox('Motor Start Speed (MSS)'):
         mss_speed = st.slider("Motor Start Speed (MSS)", 1.0, 9.0, 5.0, 0.1)
         patches.append(f"mss={mss_speed}")

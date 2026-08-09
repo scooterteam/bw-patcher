@@ -33,6 +33,7 @@ pip install -r requirements.txt
 ## Supported Models
 
 - Mi4
+- Mi3Lite
 - Mi4Pro2nd
 - Mi4Lite
 - Mi5
