@@ -31,11 +31,10 @@ class SignatureException(Exception):
 
 
 class ExperimentalPatchError(Exception):
-    """Raised when an @experimental patch is requested without allow_experimental."""
+    pass
 
 
 def experimental(fn):
-    """Mark a patcher method as experimental (UI/CLI gated unless explicitly allowed)."""
     @wraps(fn)
     def wrapper(*args, **kwargs):
         return fn(*args, **kwargs)
@@ -49,7 +48,6 @@ def is_experimental_method(method) -> bool:
 
 
 def is_patch_experimental(patcher, patch_code: str) -> bool:
-    """True if this model's implementation of ``patch_code`` is @experimental."""
     if patch_code not in patch_map:
         return False
     return is_experimental_method(patch_map[patch_code](patcher))
@@ -69,7 +67,6 @@ patch_map = {
     "cce": lambda patcher: patcher.cruise_control_enable,
 }
 
-# patch code → CorePatcher method name (for class-level @experimental checks)
 PATCH_METHOD_NAMES = {
     "rsls": "remove_speed_limit_sport",
     "dms": "dashboard_max_speed",
@@ -86,7 +83,6 @@ PATCH_METHOD_NAMES = {
 
 
 def is_model_patch_experimental(model: str, patch_code: str) -> bool:
-    """True if ``model``'s class marks this patch code with @experimental."""
     method_name = PATCH_METHOD_NAMES.get(patch_code)
     if not method_name:
         return False

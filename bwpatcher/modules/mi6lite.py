@@ -15,20 +15,8 @@ from bwpatcher.utils import SignatureException, experimental, find_pattern
 
 
 class Mi6litePatcher(LeqiPaddingSpeedPatcher):
-    """
-    Patcher for Xiaomi Mi 6 Lite with N32 (Leqi) controller.
+    FIRMWARE_SIZE = 0xB000
 
-    Hijacks the speed-calc instructions with b.w into tail zero padding.
-    Base pointer in r1, speed value in r0.
-
-    Region bypass supports two revisions:
-      V1: cmp/beq tree with movs #0xcf / movw #0x101
-      V2: if-else with movs #0xdc / movw #0x113
-    """
-
-    FIRMWARE_SIZE = 0xB000  # Fallback only; real size is read from the EU1 header
-
-    # UART cmd 0x21 telemetry path: ldrb r0,[r1,#5] * 10 -> strh.
     SIG_SPEED_CALC_ANCHOR = [
         0x48, 0x79, 0x54, 0x49,
         0x00, 0xEB, 0x80, 0x00,
@@ -37,7 +25,6 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
     ]
     OUTPUT_PTR_LDR_OFFSET = 2
 
-    # V1: regional cap tree (~0x3226) with EU #0xcf / GL #0x101.
     SIG_REGION_LIMIT_ANCHOR_V1: List[Optional[int]] = [
         0x67, 0x4F,
         None, None, None, None, None, None,
@@ -46,7 +33,6 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
         0x05, 0xD1, 0x01, 0xE0, 0xCF, 0x21, 0x01, 0xE0, 0x40, 0xF2,
         0x01, 0x11, 0x39, 0x80,
     ]
-    # Keep old name for tests that reference it.
     SIG_REGION_LIMIT_ANCHOR = SIG_REGION_LIMIT_ANCHOR_V1
 
     REGION_CMP_BEQ_OFFSET = 4
@@ -60,7 +46,6 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
     REGION_MOVW_IMM_STOCK_V1 = 0x01
     REGION_MOVW_IMM_PATCH = 0x5E
 
-    # V2: movs r1,#0xdc; b store; movw r1,#0x113; strh r1,[r2]
     SIG_REGION_LIMIT_ANCHOR_V2 = [
         0xDC, 0x21, 0x01, 0xE0, 0x40, 0xF2, 0x13, 0x11, 0x11, 0x80,
     ]
@@ -68,9 +53,6 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
     REGION_MOVW_IMM_OFFSET_V2 = 6
     REGION_MOVW_IMM_STOCK_V2 = 0x13
 
-    # detectKickStartSpeed (Elite-like). Stock: clear flag when avg >= #0x2D
-    # (4.5 km/h); acquire when avg < #0x1E (3.0 km/h) for 3 samples.
-    # Differs from Elite SIG (r5 vs r3, pop r7, acquire cmp vs adds hyst).
     SIG_MOTOR_START = [
         0x01, 0x80, 0x2D, 0x2D, 0xEF, 0xD3, 0x11, 0x70,
         0xF0, 0xBD, 0x1E, 0x2D, 0x07, 0xD2,
@@ -120,7 +102,6 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
         return (name, hex(offset), pre.hex(), post.hex())
 
     def _apply_region_limit(self) -> List[Tuple[str, str, str, str]]:
-        """Force REGION_LIMIT_VALUE (35 km/h) for all region IDs in UART cmd 0x21 path."""
         try:
             sig_ofs, variant = self._resolve_region_limit_anchor()
         except SignatureException:
@@ -175,12 +156,10 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
 
     @experimental
     def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
-        """Retune kick-start clear/acquire thresholds (stock 4.5 / 3.0 km/h)."""
         results = []
         ofs_sig = find_pattern(self.data, self.SIG_MOTOR_START)
 
         speed = self._calc_speed(kmh, size=0) & 0xFF
-        # Preserve a low-speed acquire window (Elite uses hyst = speed//2).
         acquire = max(1, speed // 2) & 0xFF
 
         ofs = ofs_sig + 2

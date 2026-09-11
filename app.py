@@ -9,7 +9,6 @@ from streamlit_scroll_to_top import scroll_to_here
 
 LEQI_MODELS = ["mi5elite", "mi6", "mi6lite", "mi5plus"]
 
-# Friendly names for the detected-model card (module key still used for patching)
 MODEL_DISPLAY = {
     "mi4": "Electric Scooter 42",
     "mi4lite": "Electric Scooter 4 Lite",
@@ -118,44 +117,25 @@ st.markdown(
 
     .bw-model {
         display: inline-flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.15rem;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.55rem;
         margin: 0.65rem 0 0.85rem;
-        padding: 0.55rem 0.9rem 0.6rem;
+        padding: 0.4rem 0.75rem;
         border-radius: 10px;
         border: 1px solid rgba(110, 184, 180, 0.28);
         background: rgba(45, 122, 118, 0.16);
         width: fit-content;
         max-width: 100%;
+        font-size: 0.9rem;
+        line-height: 1.35;
+        color: #c5ccc7;
     }
 
-    .bw-model-label {
+    .bw-model strong {
         font-family: "Space Grotesk", sans-serif;
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: #6eb8b4;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .bw-model-name {
-        font-family: "Space Grotesk", sans-serif;
-        font-size: 1.35rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
         color: #f2f5f3;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .bw-model-meta {
-        margin: 0;
-        color: #8a938c;
-        font-size: 0.78rem;
-        line-height: 1.3;
     }
 
     .bw-foot {
@@ -301,12 +281,7 @@ scooter_model = None
 if uploaded_file is not None:
     raw = uploaded_file.getvalue()
     detection = detect_bytes(raw, uploaded_file.name)
-    if (
-        detection.bwpatcher
-        and detection.confidence in ("high", "medium")
-        and detection.best
-        and detection.best in ALL_MODULES
-    ):
+    if detection.ok and detection.best in ALL_MODULES:
         detected_model = detection.best
         scooter_model = detected_model
 
@@ -319,21 +294,20 @@ if uploaded_file is None:
     st.caption("Upload firmware to detect the scooter model from the header.")
 elif scooter_model:
     display_name = MODEL_DISPLAY.get(scooter_model, scooter_model)
+    bits = [display_name]
+    if display_name != scooter_model:
+        bits.append(scooter_model)
+    bits.extend([detection.family, detection.container])
     st.markdown(
-        f"""
-<div class="bw-model">
-  <p class="bw-model-label">Detected model</p>
-  <p class="bw-model-name">{display_name}</p>
-  <p class="bw-model-meta">{scooter_model} · {detection.family} · {detection.container} · {detection.confidence} confidence</p>
-</div>
-""",
+        f'<div class="bw-model">Detected <strong>{bits[0]}</strong> · '
+        + " · ".join(bits[1:])
+        + "</div>",
         unsafe_allow_html=True,
     )
     if experimental_mode:
         st.info("Experimental patches unlocked (?experimental=1).")
 else:
-    detail = "; ".join(detection.notes[:2]) if detection and detection.notes else "unsupported or ambiguous header"
-    st.error(f"Could not detect a supported model from the header ({detail}).")
+    st.error("Could not detect a supported model from the header.")
 
 if not scooter_model:
     st.markdown(

@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# BW Patcher — header-only model detection ([0x00, 0x80))
-# See docs/brightway/23-header-model-detection.md
-#
+# BW Patcher — header model detection
 # Copyright (C) 2024-2026 ScooterTeam
 # Licensed under CC BY-NC-SA 4.0
-
-"""Detect scooter model from firmware header bytes alone."""
 
 from __future__ import annotations
 
@@ -51,14 +47,12 @@ BW_ID = {
     "000700010001": "mi5pro",
     "001000010001": "mi4pro2nd",
     "000600010001": "mi4pro2nd",
-    # Scooter 4 (t2201) — not supported by bwpatcher
     "001320122002": "t2201",
     "001720122010": "ultra4",
     "001820122010": "ultra4",
     "001920122010": "ultra4",
     "000920012001": "mi4lite",
     "001020012001": "mi4lite2",
-    # Electric Scooter 42 (t2209); same id as t2209g — assume 42 / mi4 module
     "001120012001": "mi4",
 }
 
@@ -68,13 +62,13 @@ BW_ID_PREFIX4 = {
     "0016": "mi5max",
 }
 
-# Models this package can patch (from module registry)
 BWPATCHER_MODELS = frozenset(ALL_MODULES)
 
 NON_PATCHER_LABELS = frozenset({
-    "6esstl", "6pro_or_6max", "mi4lite2",
-    "t2201",  # Xiaomi Electric Scooter 4 — not supported
+    "6esstl", "6pro_or_6max", "mi4lite2", "t2201",
 })
+
+MIN_SCORE = 30
 
 
 @dataclass
@@ -86,14 +80,12 @@ class Hit:
 
 @dataclass
 class Detection:
-    """Result of header-only model detection."""
-
     size: int
-    family: str  # leqi | brightway | unknown
-    container: str = "unknown"  # eu1 | packaged | type2_map | raw | unknown
+    family: str
+    container: str = "unknown"
     header: Optional[dict] = None
     best: Optional[str] = None
-    confidence: str = "none"  # high | medium | low | none | ambiguous
+    ok: bool = False
     hits: List[Hit] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
     bwpatcher: bool = False
@@ -104,7 +96,7 @@ class Detection:
 
 
 class ModelDetectionError(ValueError):
-    """Raised when a patchable model cannot be determined from the header."""
+    pass
 
 
 def _add(scores: dict, model: str, pts: int, reason: str) -> None:
@@ -201,7 +193,6 @@ def parse_raw_markers(hdr: bytes) -> List[str]:
 
 
 def detect_bytes(data: bytes, path: str = "<memory>") -> Detection:
-    """Classify model from firmware header ([0x00, 0x80))."""
     det = Detection(path=path, size=len(data), family="unknown")
     scores: dict[str, Hit] = {}
     hdr = _hdr(data)
@@ -246,7 +237,6 @@ def detect_bytes(data: bytes, path: str = "<memory>") -> Detection:
         _finalize(det, scores)
         return det
 
-    # Brightway type-2 map container (6pro / 6max / cross) — still Brightway OEM
     if len(hdr) >= 4 and hdr[0] == 2 and hdr[1] == 0 and hdr[2] == 0 and hdr[3] == 0:
         det.family = "brightway"
         det.container = "type2_map"
@@ -308,50 +298,32 @@ def _finalize(det: Detection, scores: dict) -> None:
     hits = sorted(scores.values(), key=lambda h: h.score, reverse=True)
     det.hits = hits
     if not hits:
-        det.confidence = "none"
         return
 
     top = hits[0]
+    tied = [h for h in hits if h.score == top.score]
+    if len(tied) > 1:
+        det.notes.append("tied: " + ", ".join(f"{h.model}={h.score}" for h in tied))
+        return
+
     det.best = top.model
     det.bwpatcher = top.model in BWPATCHER_MODELS
-    tied = [h for h in hits if h.score == top.score]
-
-    if len(tied) > 1:
-        det.confidence = "ambiguous"
-        det.notes.append("tied: " + ", ".join(f"{h.model}={h.score}" for h in tied))
-    elif top.model in NON_PATCHER_LABELS:
-        det.confidence = "medium"
-        if top.model not in BWPATCHER_MODELS:
-            det.notes.append(f"{top.model} is not a bwpatcher module")
-    elif top.score >= 50:
-        det.confidence = "high"
-    elif top.score >= 30:
-        det.confidence = "medium"
-    else:
-        det.confidence = "low"
+    if (
+        top.score >= MIN_SCORE
+        and det.bwpatcher
+        and top.model not in NON_PATCHER_LABELS
+    ):
+        det.ok = True
+    elif top.model not in BWPATCHER_MODELS:
+        det.notes.append(f"{top.model} is not a bwpatcher module")
 
 
-def detect_model(
-    data: bytes,
-    *,
-    require_patchable: bool = True,
-    min_confidence: str = "medium",
-) -> str:
-    """
-    Return a bwpatcher model name from firmware bytes.
-
-    Raises ModelDetectionError if detection fails the requested bar.
-    """
-    order = {"none": 0, "low": 1, "medium": 2, "high": 3, "ambiguous": 0}
+def detect_model(data: bytes, *, require_patchable: bool = True) -> str:
     det = detect_bytes(data)
-    if det.confidence == "ambiguous" or not det.best:
+    if not det.ok or not det.best:
         raise ModelDetectionError(
-            f"could not uniquely identify model from header"
+            "could not identify model from header"
             + (f" ({'; '.join(det.notes)})" if det.notes else "")
-        )
-    if order.get(det.confidence, 0) < order.get(min_confidence, 2):
-        raise ModelDetectionError(
-            f"low-confidence detection: {det.best} [{det.confidence}]"
         )
     if require_patchable and not det.bwpatcher:
         raise ModelDetectionError(
@@ -365,8 +337,8 @@ def format_detection(det: Detection) -> str:
     if det.header:
         lines.append(f"  header: {det.header}")
     label = det.best or "unknown"
-    bp = " bwpatcher" if det.bwpatcher else ""
-    lines.append(f"  => {label}  [{det.confidence}]{bp}")
+    status = "ok" if det.ok else "not detected"
+    lines.append(f"  => {label}  [{status}]")
     for h in det.hits[:5]:
         lines.append(f"     {h.model:14s} score={h.score:3d}  " + "; ".join(h.reasons[:4]))
     for n in det.notes:

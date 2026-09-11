@@ -15,21 +15,12 @@ from bwpatcher.utils import find_pattern, SignatureException
 
 
 class LeqiSpeedPatcher(CoreN32Patcher):
-    """
-    Shared speed-limit patcher for N32 (Leqi) controller firmware variants.
-
-    Implements the methodology from 19-speed-limit-patch-methodology.md:
-    hijack the speed-calc site, inject mode-aware logic, store result, return.
-    Subclasses supply variant-specific offsets, hijack style, and assembly templates.
-    """
-
     MODE_PEDESTRIAN = 1
     MODE_DRIVE = 2
     MODE_SPORT = 3
 
     MODE_ORDER = ('ped', 'drive', 'sport')
 
-    # UART regional cap in 0.1 km/h units (35 km/h, same as Elite SPECIAL/Standard).
     REGION_LIMIT_VALUE = 0x15E
 
     def __init__(self, data: bytes):

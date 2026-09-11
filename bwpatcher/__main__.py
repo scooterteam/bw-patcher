@@ -70,7 +70,7 @@ def _cmd_patch(argv: list) -> int:
     parser.add_argument(
         "--experimental",
         action="store_true",
-        help="Allow @experimental patches (e.g. ultra4 SLS/SLD, mi6/mi6lite MSS)",
+        help="Allow experimental patches",
     )
     args = parser.parse_args(argv)
 

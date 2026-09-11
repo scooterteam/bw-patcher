@@ -15,18 +15,8 @@ from bwpatcher.utils import SignatureException, experimental, find_pattern
 
 
 class Mi6Patcher(LeqiPaddingSpeedPatcher):
-    """
-    Patcher for Xiaomi Mi 6 with N32 (Leqi) controller.
+    FIRMWARE_SIZE = 0xA800
 
-    Hijacks the speed-calc instruction with b.w into tail zero padding.
-    Supports two firmware revisions:
-      V1: base in r8, speed in r2; region tbb + movw #0x101
-      V2: base in ip, speed in r0; region movs #0xdc / movw #0x113
-    """
-
-    FIRMWARE_SIZE = 0xA800  # Fallback only; real size is read from the EU1 header
-
-    # V1: ldrb.w r2,[r8,#5] + ldr r3,[pc] + *10 + strh r2,[r3]
     SIG_SPEED_CALC_ANCHOR_V1 = [
         0x98, 0xF8, 0x05, 0x20,
         0x4A, 0x4B,
@@ -34,7 +24,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         0x52, 0x00,
         0x1A, 0x80,
     ]
-    # V2: ldrb.w r0,[ip,#5] + ldr r2,[pc] + *10 + strh r0,[r2]
     SIG_SPEED_CALC_ANCHOR_V2 = [
         0x9C, 0xF8, 0x05, 0x00,
         0x49, 0x4A,
@@ -42,11 +31,9 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         0x40, 0x00,
         0x10, 0x80,
     ]
-    # Default used by tests / attribute access; resolved in __init__.
     SIG_SPEED_CALC_ANCHOR = SIG_SPEED_CALC_ANCHOR_V1
     OUTPUT_PTR_LDR_OFFSET = 4
 
-    # V1: UART cmd 0x21 regional speed switch (~0x2e24, tbb dispatch).
     SIG_REGION_LIMIT_ANCHOR_V1: List[Optional[int]] = [
         0x82, 0x4B,
         None, None, None, None, None, None,
@@ -65,7 +52,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
     REGION_MOVW_IMM_STOCK_V1 = 0x01
     REGION_MOVW_IMM_PATCH = 0x5E
 
-    # V2: movs r0,#0xdc; b store; movw r0,#0x113; strh r0,[r7]
     SIG_REGION_LIMIT_ANCHOR_V2 = [
         0xDC, 0x20, 0x01, 0xE0, 0x40, 0xF2, 0x13, 0x10, 0x38, 0x80,
     ]
@@ -75,9 +61,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
     REGION_MOVW_IMM_OFFSET_V2 = 6
     REGION_MOVW_IMM_STOCK_V2 = 0x13
 
-    # Primary motor-enable in calculateMotorControlTargets (no Elite-style
-    # detectKickStartSpeed on Mi6). Stock cmp r1,#0x2D (4.5 km/h) then
-    # strb motor_enable_flag at struct+3. Stack store imm (None) differs by build.
     SIG_MOTOR_START: List[Optional[int]] = [
         0x2D, 0x29, 0x3F, 0x78, None, 0x97, 0x03, 0xDD,
         0x01, 0x27, 0x89, 0xF8, 0x03, 0x70,
@@ -106,7 +89,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         except SignatureException:
             pass
 
-        # Keep V1 as default for error messages from locate.
         self._fw_variant = None
         self.SIG_SPEED_CALC_ANCHOR = self.SIG_SPEED_CALC_ANCHOR_V1
 
@@ -147,7 +129,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         return (name, hex(offset), pre.hex(), post.hex())
 
     def _apply_region_limit(self) -> List[Tuple[str, str, str, str]]:
-        """Force REGION_LIMIT_VALUE (35 km/h) for all region IDs in UART cmd 0x21 path."""
         try:
             sig_ofs, variant = self._resolve_region_limit_anchor()
         except SignatureException:
@@ -196,11 +177,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
 
     @experimental
     def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
-        """Lower primary motor-enable threshold (stock 4.5 km/h).
-
-        Patches the single ``cmp r1,#imm`` that sets ``motor_enable_flag`` (+3).
-        Does not touch the gradual ramp ``#0x1E`` (same scope as Elite MSS).
-        """
         ofs = find_pattern(self.data, self.SIG_MOTOR_START)
         speed = self._calc_speed(kmh, size=0) & 0xFF
         pre = bytes([self.data[ofs]])
@@ -212,10 +188,6 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         assert self._return_address is not None
         assert self._output_ptr is not None
         if self._fw_variant == "v2":
-            # r1 is live across the hijack: post-return packet builder does
-            # `strh <len>, [r1]` at ~0x2ac6. Clobbering it with mode caused
-            # stores to absolute addresses 1/2/3 → HardFault → err 10/35 loop.
-            # r3 is redefined before use after return, so it is safe here.
             reload_asm = """
             ldrb.w r0, [ip, #5]
             ldrb.w r3, [ip, #2]

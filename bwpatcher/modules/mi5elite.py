@@ -14,21 +14,6 @@ from bwpatcher.utils import find_pattern, SignatureException
 
 
 class Mi5elitePatcher(LeqiSpeedPatcher):
-    """
-    Patcher for Xiaomi Mi 5 Elite with N32 (Leqi) controller.
-
-    Uses signature-based pattern matching to apply binary patches for:
-    - Speed limits per mode (pedestrian, drive, sport)
-    - Motor start speed threshold
-    - Regional speed limit removal
-
-    Architecture:
-    - Branch patch at ldrb.w location (6 bytes)
-    - Speed logic injected into dead code (executed by all paths)
-    - Two return paths: default (executes add.w + lsls) and patched (jumps to strh)
-    - Dynamic pattern matching for data addresses
-    """
-
     FIRMWARE_SIZE = 0x9880
 
     SIG_SPEED_LIMIT_RETURN = [
