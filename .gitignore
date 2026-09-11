@@ -167,8 +167,11 @@ debug/
 tests/data/*.bin
 
 # Local-only helpers and tests
-scripts/leqi_fw_tool.py
 tests/
+bins/
+/*.bin
+scripts/leqi_fw_tool.py
+AGENTS.md
 
 # IDE-specific
 .vscode/

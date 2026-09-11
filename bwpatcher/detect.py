@@ -54,6 +54,8 @@ BW_ID = {
     "000920012001": "mi4lite",
     "001020012001": "mi4lite2",
     "001120012001": "mi4",
+    "021622152185": "3lite",
+    "021422142185": "3lite",
 }
 
 BW_ID_PREFIX4 = {
@@ -65,7 +67,7 @@ BW_ID_PREFIX4 = {
 BWPATCHER_MODELS = frozenset(ALL_MODULES)
 
 NON_PATCHER_LABELS = frozenset({
-    "6esstl", "6pro_or_6max", "mi4lite2", "t2201",
+    "3lite", "6esstl", "6pro_or_6max", "mi4lite2", "t2201",
 })
 
 MIN_SCORE = 30

@@ -12,6 +12,7 @@ LEQI_MODELS = ["mi5elite", "mi6", "mi6lite", "mi5plus"]
 MODEL_DISPLAY = {
     "mi4": "Electric Scooter 42",
     "mi4lite": "Electric Scooter 4 Lite",
+    "3lite": "Electric Scooter 3 Lite",
 }
 
 st.set_page_config(
@@ -305,9 +306,20 @@ elif scooter_model:
         unsafe_allow_html=True,
     )
     if experimental_mode:
-        st.info("Experimental patches unlocked (?experimental=1).")
+        st.warning(
+            "Experimental patches unlocked (?experimental=1) — they may be incomplete "
+            "or untested. There is no guarantee of correct behavior; flashing can brick "
+            "your scooter. Proceed only if you accept that risk."
+        )
 else:
-    st.error("Could not detect a supported model from the header.")
+    if detection and detection.best:
+        name = MODEL_DISPLAY.get(detection.best, detection.best)
+        st.error(
+            f"Detected {name} ({detection.best}), but this model is not supported "
+            "for patching yet."
+        )
+    else:
+        st.error("Could not detect a supported model from the header.")
 
 if not scooter_model:
     st.markdown(

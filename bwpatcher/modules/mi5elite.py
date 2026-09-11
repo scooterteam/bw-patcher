@@ -16,13 +16,13 @@ from bwpatcher.utils import find_pattern, SignatureException
 class Mi5elitePatcher(LeqiSpeedPatcher):
     FIRMWARE_SIZE = 0x9880
 
-    SIG_SPEED_LIMIT_RETURN = [
-        0x08, 0x80, 0x52, 0x48, 0x52, 0x49, 0x00, 0x88,
-        0x09, 0x88, 0x00, 0xf1, 0x0a, 0x02, 0x8a, 0x42, 0x01, 0xd9
+    SIG_SPEED_LIMIT_HIJACK = [
+        0x98, 0xf8, 0x05, 0x00, None, 0x49,
+        0x00, 0xeb, 0x80, 0x00, 0x40, 0x00, 0x08, 0x80,
     ]
 
     SIG_SPEED_LIMIT_DST = [
-        0xdf, 0xf8, 0xf0, 0x81, 0xa8, 0xf8, 0x00, 0x10, 0x7b, 0x49, 0x67, 0x45
+        0xdf, 0xf8, None, 0x81, 0xa8, 0xf8, 0x00, 0x10, None, 0x49, 0x67, 0x45,
     ]
 
     SIG_MOTOR_START = [
@@ -40,8 +40,7 @@ class Mi5elitePatcher(LeqiSpeedPatcher):
 
     def _locate_patch_offsets(self) -> None:
         try:
-            sig_offset = find_pattern(self.data, self.SIG_SPEED_LIMIT_RETURN)
-            self._ldr_patch_offset = sig_offset - 12
+            self._ldr_patch_offset = find_pattern(self.data, self.SIG_SPEED_LIMIT_HIJACK)
         except SignatureException:
             raise Exception("Could not find speed limit signature for patching")
 
