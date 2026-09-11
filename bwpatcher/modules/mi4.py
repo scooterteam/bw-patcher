@@ -23,6 +23,11 @@ from bwpatcher.utils import find_pattern, get_reg
 
 
 class Mi4Patcher(LKS32Patcher):
+    """Patches for Xiaomi Electric Scooter 42 (`navee1.scooter.t2209`).
+
+    Scooter 4 (`dreame.scooter.t2201`) is not supported.
+    """
+
     def __init__(self, data):
         super().__init__(data)
         self.sig_branch_src = [0x20, 0x31, None, 0x72, 0x0F, None, None, 0x72]

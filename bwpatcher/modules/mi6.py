@@ -11,7 +11,7 @@
 from typing import List, Optional, Tuple
 
 from bwpatcher.modules.leqi_speed import LeqiPaddingSpeedPatcher
-from bwpatcher.utils import SignatureException, find_pattern
+from bwpatcher.utils import SignatureException, experimental, find_pattern
 
 
 class Mi6Patcher(LeqiPaddingSpeedPatcher):
@@ -74,6 +74,14 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
     REGION_SKIP_BRANCH_PATCH = bytes([0x00, 0xBF])
     REGION_MOVW_IMM_OFFSET_V2 = 6
     REGION_MOVW_IMM_STOCK_V2 = 0x13
+
+    # Primary motor-enable in calculateMotorControlTargets (no Elite-style
+    # detectKickStartSpeed on Mi6). Stock cmp r1,#0x2D (4.5 km/h) then
+    # strb motor_enable_flag at struct+3. Stack store imm (None) differs by build.
+    SIG_MOTOR_START: List[Optional[int]] = [
+        0x2D, 0x29, 0x3F, 0x78, None, 0x97, 0x03, 0xDD,
+        0x01, 0x27, 0x89, 0xF8, 0x03, 0x70,
+    ]
 
     def __init__(self, data: bytes):
         super().__init__(data)
@@ -185,6 +193,20 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
 
     def _speed_limit_fix(self) -> List[Tuple[str, str, str, str]]:
         return self._apply_region_limit()
+
+    @experimental
+    def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
+        """Lower primary motor-enable threshold (stock 4.5 km/h).
+
+        Patches the single ``cmp r1,#imm`` that sets ``motor_enable_flag`` (+3).
+        Does not touch the gradual ramp ``#0x1E`` (same scope as Elite MSS).
+        """
+        ofs = find_pattern(self.data, self.SIG_MOTOR_START)
+        speed = self._calc_speed(kmh, size=0) & 0xFF
+        pre = bytes([self.data[ofs]])
+        post = bytes([speed])
+        self.data[ofs] = speed
+        return [("motor_start_speed_enable", hex(ofs), pre.hex(), post.hex())]
 
     def _build_speed_logic_asm(self) -> str:
         assert self._return_address is not None

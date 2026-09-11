@@ -19,7 +19,7 @@
 #
 
 from bwpatcher.core_lks32 import LKS32Patcher
-from bwpatcher.utils import find_pattern
+from bwpatcher.utils import experimental, find_pattern
 
 
 class Ultra4Patcher(LKS32Patcher):
@@ -72,6 +72,7 @@ class Ultra4Patcher(LKS32Patcher):
         self.data[ofs:ofs+2] = post
         return [("motor_start_speed", hex(ofs), pre.hex(), post.hex())]
 
+    @experimental
     def speed_limit_drive(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         # movs r3,#0xca / strh r3,[r0,#0x0] — independent of sport immediate
@@ -92,6 +93,7 @@ class Ultra4Patcher(LKS32Patcher):
         ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
         return ret
 
+    @experimental
     def speed_limit_sport(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
         # movs r1,#0xfc / strh r1,[r0,#0x2] — independent of drive immediate
@@ -112,5 +114,6 @@ class Ultra4Patcher(LKS32Patcher):
         ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
         return ret
 
+    @experimental
     def remove_speed_limit_sport(self):
         return self.speed_limit_sport(kmh=36.7)

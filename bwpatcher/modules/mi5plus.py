@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #! -*- coding: utf-8 -*-
 #
-# BW Patcher - Xiaomi 5 Plus (experimental)
+# BW Patcher - Xiaomi 5 Plus
 # Copyright (C) 2024-2026 ScooterTeam
 #
 # This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.

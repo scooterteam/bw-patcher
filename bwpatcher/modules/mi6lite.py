@@ -11,7 +11,7 @@
 from typing import List, Optional, Tuple
 
 from bwpatcher.modules.leqi_speed import LeqiPaddingSpeedPatcher
-from bwpatcher.utils import SignatureException, find_pattern
+from bwpatcher.utils import SignatureException, experimental, find_pattern
 
 
 class Mi6litePatcher(LeqiPaddingSpeedPatcher):
@@ -67,6 +67,14 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
     REGION_SKIP_BRANCH_OFFSET_V2 = 2
     REGION_MOVW_IMM_OFFSET_V2 = 6
     REGION_MOVW_IMM_STOCK_V2 = 0x13
+
+    # detectKickStartSpeed (Elite-like). Stock: clear flag when avg >= #0x2D
+    # (4.5 km/h); acquire when avg < #0x1E (3.0 km/h) for 3 samples.
+    # Differs from Elite SIG (r5 vs r3, pop r7, acquire cmp vs adds hyst).
+    SIG_MOTOR_START = [
+        0x01, 0x80, 0x2D, 0x2D, 0xEF, 0xD3, 0x11, 0x70,
+        0xF0, 0xBD, 0x1E, 0x2D, 0x07, 0xD2,
+    ]
 
     def __init__(self, data: bytes):
         super().__init__(data)
@@ -164,6 +172,30 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
 
     def _speed_limit_fix(self) -> List[Tuple[str, str, str, str]]:
         return self._apply_region_limit()
+
+    @experimental
+    def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
+        """Retune kick-start clear/acquire thresholds (stock 4.5 / 3.0 km/h)."""
+        results = []
+        ofs_sig = find_pattern(self.data, self.SIG_MOTOR_START)
+
+        speed = self._calc_speed(kmh, size=0) & 0xFF
+        # Preserve a low-speed acquire window (Elite uses hyst = speed//2).
+        acquire = max(1, speed // 2) & 0xFF
+
+        ofs = ofs_sig + 2
+        pre = bytes([self.data[ofs]])
+        post = bytes([speed])
+        self.data[ofs] = speed
+        results.append(("motor_start_speed_threshold", hex(ofs), pre.hex(), post.hex()))
+
+        ofs = ofs_sig + 10
+        pre = bytes([self.data[ofs]])
+        post = bytes([acquire])
+        self.data[ofs] = acquire
+        results.append(("motor_start_speed_acquire", hex(ofs), pre.hex(), post.hex()))
+
+        return results
 
     def _build_speed_logic_asm(self) -> str:
         assert self._return_address is not None

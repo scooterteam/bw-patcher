@@ -52,16 +52,15 @@ This tool can modify various firmware parameters. The specific parameters availa
 ### CLI
 ```bash
 poetry run python -m bwpatcher --help
-usage: __main__.py [-h] {model} infile outfile patches
 
-positional arguments:
-  {model}       Device model (see supported models above)
-  infile        Input firmware file
-  outfile       Output firmware file
-  patches       Comma-separated list of patches to apply
+# Explicit model
+poetry run python -m bwpatcher mi4 firmware.bin out.bin sls=25,chk
 
-options:
-  -h, --help    show this help message and exit
+# Auto-detect model from header ([0x00, 0x80))
+poetry run python -m bwpatcher auto firmware.bin out.bin sls=25,chk
+
+# Header-only model detection
+poetry run python -m bwpatcher detect firmware.bin
 ```
 
 ### GUI
@@ -69,7 +68,8 @@ options:
 poetry run streamlit run app.py
 ```
 
-The GUI provides an interactive interface for selecting firmware modifications. A legal disclaimer must be accepted before use.
+The GUI auto-selects the model from the uploaded firmware header when possible
+(override via the model dropdown). A legal disclaimer must be accepted before use.
 
 ### Example Usage
 

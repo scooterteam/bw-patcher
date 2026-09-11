@@ -21,12 +21,38 @@
 import shutil
 import traceback
 
+from functools import wraps
 from importlib import import_module
 import re
 
 
 class SignatureException(Exception):
     pass
+
+
+class ExperimentalPatchError(Exception):
+    """Raised when an @experimental patch is requested without allow_experimental."""
+
+
+def experimental(fn):
+    """Mark a patcher method as experimental (UI/CLI gated unless explicitly allowed)."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        return fn(*args, **kwargs)
+    wrapper._bw_experimental = True
+    return wrapper
+
+
+def is_experimental_method(method) -> bool:
+    fn = getattr(method, "__func__", method)
+    return bool(getattr(fn, "_bw_experimental", False))
+
+
+def is_patch_experimental(patcher, patch_code: str) -> bool:
+    """True if this model's implementation of ``patch_code`` is @experimental."""
+    if patch_code not in patch_map:
+        return False
+    return is_experimental_method(patch_map[patch_code](patcher))
 
 
 patch_map = {
@@ -43,8 +69,36 @@ patch_map = {
     "cce": lambda patcher: patcher.cruise_control_enable,
 }
 
+# patch code → CorePatcher method name (for class-level @experimental checks)
+PATCH_METHOD_NAMES = {
+    "rsls": "remove_speed_limit_sport",
+    "dms": "dashboard_max_speed",
+    "slp": "speed_limit_ped",
+    "sld": "speed_limit_drive",
+    "sls": "speed_limit_sport",
+    "rfm": "region_free",
+    "fdv": "fake_drv_version",
+    "chk": "fix_checksum",
+    "img": "create_full_image",
+    "mss": "motor_start_speed",
+    "cce": "cruise_control_enable",
+}
 
-def patch_firmware(model: str, data: bytes, patches: list, web=True):
+
+def is_model_patch_experimental(model: str, patch_code: str) -> bool:
+    """True if ``model``'s class marks this patch code with @experimental."""
+    method_name = PATCH_METHOD_NAMES.get(patch_code)
+    if not method_name:
+        return False
+    module = import_module(f"bwpatcher.modules.{model}")
+    patcher_class = getattr(module, f"{model.capitalize()}Patcher")
+    method = getattr(patcher_class, method_name, None)
+    if method is None:
+        return False
+    return is_experimental_method(method)
+
+
+def patch_firmware(model: str, data: bytes, patches: list, web=True, allow_experimental=False):
     # CHK patch must always come last for every scooter using update file
     # --> no longer forcing, instead put in GUI
     #if patches[-1] != "chk":
@@ -65,11 +119,19 @@ def patch_firmware(model: str, data: bytes, patches: list, web=True):
 
         if patch in patch_map:
             try:
+                method = patch_map[patch](patcher)
+                if is_experimental_method(method) and not allow_experimental:
+                    raise ExperimentalPatchError(
+                        f"{patch} is experimental on {model}; "
+                        "pass allow_experimental=True / --experimental / ?experimental=1"
+                    )
                 if value:
-                    res = patch_map[patch](patcher)(value)
+                    res = method(value)
                 else:
-                    res = patch_map[patch](patcher)()
+                    res = method()
                 print(res)
+            except ExperimentalPatchError:
+                raise
             except Exception as e:
                 if web:
                     raise e
