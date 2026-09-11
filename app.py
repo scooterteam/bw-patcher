@@ -1,4 +1,8 @@
-from bwpatcher.utils import patch_firmware, is_model_patch_experimental
+from bwpatcher.utils import (
+    patch_firmware,
+    is_model_patch_experimental,
+    PATCH_METHOD_NAMES,
+)
 from bwpatcher.modules import ALL_MODULES
 from bwpatcher import __version__
 from bwpatcher.detect import detect_bytes
@@ -122,20 +126,22 @@ st.markdown(
         flex-wrap: wrap;
         gap: 0.35rem 0.55rem;
         margin: 0.65rem 0 0.85rem;
-        padding: 0.4rem 0.75rem;
+        padding: 0.55rem 0.9rem;
         border-radius: 10px;
         border: 1px solid rgba(110, 184, 180, 0.28);
         background: rgba(45, 122, 118, 0.16);
         width: fit-content;
         max-width: 100%;
-        font-size: 0.9rem;
-        line-height: 1.35;
+        font-size: 1.15rem;
+        line-height: 1.4;
         color: #c5ccc7;
     }
 
     .bw-model strong {
         font-family: "Space Grotesk", sans-serif;
+        font-size: 1.45rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
         color: #f2f5f3;
     }
 
@@ -305,7 +311,9 @@ elif scooter_model:
         + "</div>",
         unsafe_allow_html=True,
     )
-    if experimental_mode:
+    if experimental_mode and any(
+        is_model_patch_experimental(scooter_model, code) for code in PATCH_METHOD_NAMES
+    ):
         st.warning(
             "Experimental patches unlocked (?experimental=1) — they may be incomplete "
             "or untested. There is no guarantee of correct behavior; flashing can brick "
