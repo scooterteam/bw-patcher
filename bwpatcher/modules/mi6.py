@@ -65,6 +65,10 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
         0x2D, 0x29, 0x3F, 0x78, None, 0x97, 0x03, 0xDD,
         0x01, 0x27, 0x89, 0xF8, 0x03, 0x70,
     ]
+    SIG_MOTOR_START_RAMP: List[Optional[int]] = [
+        0x96, 0x29, None, None, 0x1E, 0x29,
+    ]
+    SIG_MOTOR_START_RAMP_SUB = [0xA1, 0xF1, 0x1E, 0x05]
 
     def __init__(self, data: bytes):
         super().__init__(data)
@@ -177,12 +181,30 @@ class Mi6Patcher(LeqiPaddingSpeedPatcher):
 
     @experimental
     def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
-        ofs = find_pattern(self.data, self.SIG_MOTOR_START)
+        results: List[Tuple[str, str, str, str]] = []
         speed = self._calc_speed(kmh, size=0) & 0xFF
+
+        ofs = find_pattern(self.data, self.SIG_MOTOR_START)
         pre = bytes([self.data[ofs]])
         post = bytes([speed])
         self.data[ofs] = speed
-        return [("motor_start_speed_enable", hex(ofs), pre.hex(), post.hex())]
+        results.append(("motor_start_speed_enable", hex(ofs), pre.hex(), post.hex()))
+
+        ramp_ofs = find_pattern(self.data, self.SIG_MOTOR_START_RAMP)
+        imm_ofs = ramp_ofs + 4
+        pre = bytes([self.data[imm_ofs]])
+        post = bytes([speed])
+        self.data[imm_ofs] = speed
+        results.append(("motor_start_speed_ramp", hex(imm_ofs), pre.hex(), post.hex()))
+
+        sub_ofs = find_pattern(self.data, self.SIG_MOTOR_START_RAMP_SUB)
+        imm_ofs = sub_ofs + 2
+        pre = bytes([self.data[imm_ofs]])
+        post = bytes([speed])
+        self.data[imm_ofs] = speed
+        results.append(("motor_start_speed_ramp_sub", hex(imm_ofs), pre.hex(), post.hex()))
+
+        return results
 
     def _build_speed_logic_asm(self) -> str:
         assert self._return_address is not None

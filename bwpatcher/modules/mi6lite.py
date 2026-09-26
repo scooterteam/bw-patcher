@@ -57,6 +57,9 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
         0x01, 0x80, 0x2D, 0x2D, 0xEF, 0xD3, 0x11, 0x70,
         0xF0, 0xBD, 0x1E, 0x2D, 0x07, 0xD2,
     ]
+    SIG_MOTOR_START_PRIMARY: List[Optional[int]] = [
+        0xBC, 0xF1, 0xF5, 0x0F, 0x0F, 0xDA, 0x1E, 0x2D,
+    ]
 
     def __init__(self, data: bytes):
         super().__init__(data)
@@ -173,6 +176,13 @@ class Mi6litePatcher(LeqiPaddingSpeedPatcher):
         post = bytes([acquire])
         self.data[ofs] = acquire
         results.append(("motor_start_speed_acquire", hex(ofs), pre.hex(), post.hex()))
+
+        prim = find_pattern(self.data, self.SIG_MOTOR_START_PRIMARY)
+        ofs = prim + 6
+        pre = bytes([self.data[ofs]])
+        post = bytes([speed])
+        self.data[ofs] = speed
+        results.append(("motor_start_speed_primary", hex(ofs), pre.hex(), post.hex()))
 
         return results
 
