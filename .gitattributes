@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.bin -text
+*.dec -text
+*.enc -text

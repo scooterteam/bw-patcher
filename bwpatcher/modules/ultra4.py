@@ -22,14 +22,51 @@ from bwpatcher.core_lks32 import LKS32Patcher
 from bwpatcher.utils import experimental, find_pattern
 
 
+CURRENT_PER_SPEED = 3
+CURRENT_SOFT_CAP = 1000
+
+
 class Ultra4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)
         self.sig_branch_src = [0xCB, 0x73, None, None, 0x03, 0x80, None, None, 0x41, 0x80]
         self.sig_branch_src_dst = [0x45, 0x81, 0x85, 0x81, None, 0x48]
+        self.sig_drive_current = [0xC1, 0x80, None, 0x4D, 0x05, 0x81]
+        self.sig_sport_current = [0xB9, 0x21, 0x89, 0x00, 0x41, 0x81, 0x81, 0x81]
 
     def _branch_site(self):
         return find_pattern(self.data, self.sig_branch_src) + len(self.sig_branch_src)
+
+    @staticmethod
+    def _current_for_speed(kmh: float) -> int:
+        return min(CURRENT_SOFT_CAP, round(kmh * 10 * CURRENT_PER_SPEED))
+
+    def _patch_drive_current(self, kmh: float):
+        ofs = find_pattern(self.data, self.sig_drive_current)
+        ldr_ofs = ofs + 2
+        imm = self.data[ldr_ofs]
+        pc_base = (ldr_ofs + 4) & ~3
+        pool = pc_base + imm * 4
+        val = self._current_for_speed(kmh).to_bytes(4, byteorder="little")
+        pre = self.data[pool:pool + 4]
+        self.data[pool:pool + 4] = val
+        return [("speed_limit_drive_current", hex(pool), pre.hex(), val.hex())]
+
+    def _patch_sport_current(self, kmh: float):
+        ofs = find_pattern(self.data, self.sig_sport_current)
+        pool_ofs, ldr_imm = self._safe_ldr(ofs, self._branch_site() + 2 + 8)
+        val = self._current_for_speed(kmh).to_bytes(4, byteorder="little")
+        pre_pool = self.data[pool_ofs:pool_ofs + 4]
+        self.data[pool_ofs:pool_ofs + 4] = val
+
+        pre = self.data[ofs:ofs + 4]
+        post = self.assembly(f"ldr r1,[pc, #{ldr_imm}]") + self.assembly("nop")
+        assert len(post) == 4, "wrong length of sport current patch"
+        self.data[ofs:ofs + 4] = post
+        return [
+            ("speed_limit_sport_current_value", hex(pool_ofs), pre_pool.hex(), val.hex()),
+            ("speed_limit_sport_current", hex(ofs), pre.hex(), post.hex()),
+        ]
 
     def dashboard_max_speed(self, speed: float):
         assert 1.0 <= speed <= 29.6, "Speed must be between 1.0 and 29.6km/h"
@@ -75,10 +112,8 @@ class Ultra4Patcher(LKS32Patcher):
     @experimental
     def speed_limit_drive(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
-        # movs r3,#0xca / strh r3,[r0,#0x0] — independent of sport immediate
         sig = [0xCA, 0x23, 0x03, 0x80]
         ofs = find_pattern(self.data, sig)
-        # First free pool slot after the region-skip branch
         speed_ofs, ldr_ofs = self._safe_ldr(ofs, self._branch_site() + 2)
 
         speed = int(kmh * 10).to_bytes(4, byteorder='little')
@@ -91,15 +126,14 @@ class Ultra4Patcher(LKS32Patcher):
         assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs + 2] = post
         ret.append(("speed_limit_drive", hex(ofs), pre.hex(), post.hex()))
+        ret.extend(self._patch_drive_current(kmh))
         return ret
 
     @experimental
     def speed_limit_sport(self, kmh: float):
         ret = [self._branch_from_to(self.sig_branch_src, self.sig_branch_src_dst, "speed_limit_fix")]
-        # movs r1,#0xfc / strh r1,[r0,#0x2] — independent of drive immediate
         sig = [0xFC, 0x21, 0x41, 0x80]
         ofs = find_pattern(self.data, sig)
-        # Second free pool slot so drive/sport never collide regardless of order
         speed_ofs, ldr_ofs = self._safe_ldr(ofs, self._branch_site() + 2 + 4)
 
         speed = int(kmh * 10).to_bytes(4, byteorder='little')
@@ -108,10 +142,11 @@ class Ultra4Patcher(LKS32Patcher):
         ret.append(("speed_limit_sport_value", hex(speed_ofs), pre.hex(), speed.hex()))
 
         pre = self.data[ofs:ofs + 2]
-        post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")  # must be r1: followed by strh r1,[r0,#0x2]
+        post = self.assembly(f"ldr r1,[pc, #{ldr_ofs}]")
         assert len(post) == 2, "Wrong length of post bytes"
         self.data[ofs:ofs + 2] = post
         ret.append(("speed_limit_sport", hex(ofs), pre.hex(), post.hex()))
+        ret.extend(self._patch_sport_current(kmh))
         return ret
 
     @experimental
