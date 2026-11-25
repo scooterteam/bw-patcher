@@ -400,7 +400,7 @@ st.markdown('<p class="bw-section">Other patches</p>', unsafe_allow_html=True)
 opt_a, opt_b = st.columns(2)
 
 with opt_a:
-    if scooter_model in ["mi4", "ultra4"]:
+    if scooter_model in ["mi4", "ultra4", "mi5elite"]:
         enable_dms = st.checkbox("Dashboard max (DMS)")
         dms_speed = st.slider(
             "DMS km/h", 1.0, 29.6, 22.0, 0.1, disabled=not enable_dms, key="dms_val"
