@@ -30,6 +30,17 @@ class Mi5elitePatcher(LeqiSpeedPatcher):
         0x70, 0xBD, 0x14, 0x33, 0x2D, 0x2B, 0x07, 0xD2
     ]
 
+    # Speed field of the controller -> dashboard status frame (reg 0x20):
+    #   strb r0,[r2,#6] ; strb r1,[r2,#7] ; lsrs r0,r1,#8 ; strb r0,[r2,#8] ; movs r0,#9
+    # r1 holds the reported speed (0.1 km/h). It is only serialized here,
+    # the speed limiter does not read it.
+    SIG_DASHBOARD_SPEED = [
+        0x90, 0x71, 0xD1, 0x71, 0x08, 0x0A, 0x10, 0x72, 0x09, 0x20,
+    ]
+    DASHBOARD_SPEED_HIJACK_OFFSET = 2
+    DASHBOARD_SPEED_HIJACK = [0xD1, 0x71, 0x08, 0x0A]
+    PADDING_SAFETY_MARGIN = 16
+
     def __init__(self, data: bytes):
         super().__init__(data)
         self._ldr_patch_offset: Optional[int] = None
@@ -110,6 +121,61 @@ class Mi5elitePatcher(LeqiSpeedPatcher):
 
         self.data[ofs:ofs + len(post)] = post
         results.append(("speed_limit_fix", hex(ofs), pre.hex(), post.hex()))
+        return results
+
+    def dashboard_max_speed(self, speed: float) -> List[Tuple[str, str, str, str]]:
+        """
+        Cap the speed the controller reports to the dashboard.
+
+        Only the value sent in the status frame is clamped; the controller's
+        speed limiter keeps using the real speed. The dashboard's overspeed
+        beep is driven by the reported speed, so it stays silent while the
+        cap is below its threshold. The displayed speed is no longer the real
+        speed above the cap.
+        """
+        assert 1.0 <= speed <= 29.6, "Speed must be between 1.0 and 29.6km/h"
+
+        try:
+            sig_ofs = find_pattern(self.data, self.SIG_DASHBOARD_SPEED)
+        except SignatureException:
+            raise Exception("Could not find dashboard speed signature for patching")
+
+        hijack_ofs = sig_ofs + self.DASHBOARD_SPEED_HIJACK_OFFSET
+        return_ofs = hijack_ofs + len(self.DASHBOARD_SPEED_HIJACK)
+        self._verify_hijack_bytes(hijack_ofs, self.DASHBOARD_SPEED_HIJACK)
+
+        # Replays the two hijacked instructions with r1 clamped to the cap.
+        inject_size = 18
+        pad_ofs = self._find_tail_zero_padding(
+            inject_size + 2 * self.PADDING_SAFETY_MARGIN
+        )
+        inject_ofs = pad_ofs + self.PADDING_SAFETY_MARGIN
+
+        cap = self._calc_speed(speed, size=0)
+        inject_asm = f"""
+        movw r0, #{cap}
+        cmp r1, r0
+        bls store
+        mov r1, r0
+        store:
+        strb r1, [r2, #7]
+        lsrs r0, r1, #8
+        b.w {hex(return_ofs)}
+        """
+        inject = self.assembly(inject_asm, inject_ofs)
+        if len(inject) != inject_size:
+            raise Exception(
+                f"Dashboard speed block must be {inject_size} bytes, got {len(inject)}"
+            )
+
+        results = [self._apply_bw_hijack(
+            hijack_ofs, inject_ofs, self.DASHBOARD_SPEED_HIJACK,
+            patch_name="dashboard_max_speed_hijack",
+        )]
+
+        pre = self.data[inject_ofs:inject_ofs + inject_size]
+        self.data[inject_ofs:inject_ofs + inject_size] = inject
+        results.append(("dashboard_max_speed", hex(inject_ofs), pre.hex(), inject.hex()))
         return results
 
     def motor_start_speed(self, kmh: float) -> List[Tuple[str, str, str, str]]:
