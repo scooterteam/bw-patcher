@@ -22,6 +22,7 @@ from bwpatcher.core_lks32 import LKS32Patcher
 from bwpatcher.utils import find_pattern, get_reg
 
 
+# Arch / ISA: Linko LKS32 · Cortex-M0 · ARMv6-M · Thumb-1 only (no movw).
 class Mi4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)

@@ -14,6 +14,7 @@ from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern, SignatureException
 
 
+# Arch / ISA: LEQI ESC (SZMC-ES-02664-LQ) · ARMv7-M · Thumb-2 OK (uses movw).
 class Mi5plusPatcher(CorePatcher):
     NAME = "Xiaomi Electric Scooter 5 Plus"
 

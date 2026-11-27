@@ -23,6 +23,8 @@ import crcmod
 from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern
 
+
+# Arch / ISA: Brightway ES32-class / EastSoft FS026-class · Cortex-M0 · ARMv6-M · Thumb-1 only.
 class ES32Patcher(CorePatcher):
     def __init__(self, data):
         super().__init__(data)

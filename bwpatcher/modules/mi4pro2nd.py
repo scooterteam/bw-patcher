@@ -22,6 +22,7 @@ from bwpatcher.core_es32 import ES32Patcher
 from bwpatcher.utils import find_pattern
 
 
+# Arch / ISA: Brightway ES32 / EastSoft FS026-class · Cortex-M0 · ARMv6-M · Thumb-1 only (no movw).
 class Mi4pro2ndPatcher(ES32Patcher):
     def __init__(self, data):
         super().__init__(data)

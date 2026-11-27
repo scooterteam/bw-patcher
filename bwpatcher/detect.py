@@ -64,6 +64,15 @@ BW_ID_PREFIX4 = {
     "0016": "mi5max",
 }
 
+# Unique ASCII stamps past the OTA header window — fulldump / raw flash only.
+# Documented IDs: docs/scooters/*/fulldump.md, docs/reference/model_manufacturers.md.
+# Only wire models here once the stamp is confirmed unique; leave others for later.
+FULLDUMP_IDS = {
+    b"LKS071BT0006": "mi6ultra",  # docs/scooters/6ultra/fulldump.md @ 0xbf44 / 0x18748
+}
+
+FULLDUMP_ONLY_MODELS = frozenset(FULLDUMP_IDS.values())
+
 BWPATCHER_MODELS = frozenset(ALL_MODULES)
 
 NON_PATCHER_LABELS = frozenset({
@@ -71,6 +80,7 @@ NON_PATCHER_LABELS = frozenset({
 })
 
 MIN_SCORE = 30
+FULLDUMP_ID_SCORE = 50
 
 
 @dataclass
@@ -194,6 +204,37 @@ def parse_raw_markers(hdr: bytes) -> List[str]:
     return tags
 
 
+def parse_fulldump_ids(data: bytes) -> List[tuple[str, int, bytes]]:
+    """Scan whole image for unique fulldump stamps (past [0x00, 0x80))."""
+    hits: List[tuple[str, int, bytes]] = []
+    for needle, model in FULLDUMP_IDS.items():
+        off = data.find(needle)
+        if off >= 0:
+            hits.append((model, off, needle))
+    return hits
+
+
+def _apply_fulldump_ids(det: Detection, scores: dict, data: bytes) -> bool:
+    body_hits = parse_fulldump_ids(data)
+    if not body_hits:
+        return False
+    det.family = det.family if det.family != "unknown" else "brightway"
+    det.container = "fulldump"
+    markers = [
+        {"model": model, "offset": f"0x{off:X}", "id": needle.decode("ascii")}
+        for model, off, needle in body_hits
+    ]
+    det.header = {"type": "fulldump_id", "markers": markers}
+    for model, off, needle in body_hits:
+        _add(
+            scores,
+            model,
+            FULLDUMP_ID_SCORE,
+            f"fulldump id {needle.decode('ascii')}@{off:#x}",
+        )
+    return True
+
+
 def detect_bytes(data: bytes, path: str = "<memory>") -> Detection:
     det = Detection(path=path, size=len(data), family="unknown")
     scores: dict[str, Hit] = {}
@@ -286,6 +327,15 @@ def detect_bytes(data: bytes, path: str = "<memory>") -> Detection:
         if "SUNWODA" in joined:
             _add(scores, "mi4lite", 20, "header SUNWODA")
         _finalize(det, scores)
+        if det.ok:
+            return det
+        # Header-window MCU strings alone are often ambiguous; try fulldump stamps.
+        if _apply_fulldump_ids(det, scores, data):
+            _finalize(det, scores)
+        return det
+
+    if _apply_fulldump_ids(det, scores, data):
+        _finalize(det, scores)
         return det
 
     det.notes.append("no recognizable header in [0x00, 0x80)")
@@ -296,6 +346,16 @@ def _finalize(det: Detection, scores: dict) -> None:
     for k in list(scores):
         if k.startswith("mi6lite_or_") or k.endswith("_or_elite") or k.endswith("_or_6esstl"):
             del scores[k]
+
+    # Drop stale tie / support notes from a prior finalize pass.
+    det.notes = [
+        n
+        for n in det.notes
+        if not n.startswith("tied:") and not n.endswith("is not a bwpatcher module")
+    ]
+    det.best = None
+    det.ok = False
+    det.bwpatcher = False
 
     hits = sorted(scores.values(), key=lambda h: h.score, reverse=True)
     det.hits = hits
@@ -324,7 +384,7 @@ def detect_model(data: bytes, *, require_patchable: bool = True) -> str:
     det = detect_bytes(data)
     if not det.ok or not det.best:
         raise ModelDetectionError(
-            "could not identify model from header"
+            "could not identify model from firmware"
             + (f" ({'; '.join(det.notes)})" if det.notes else "")
         )
     if require_patchable and not det.bwpatcher:

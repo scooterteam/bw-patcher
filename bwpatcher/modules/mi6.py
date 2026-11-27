@@ -14,6 +14,7 @@ from bwpatcher.modules.leqi_speed import LeqiPaddingSpeedPatcher
 from bwpatcher.utils import SignatureException, experimental, find_pattern
 
 
+# Arch / ISA: Nations N32G (LEQI) · Cortex-M3 · ARMv7-M · Thumb-2 OK (movw/movt).
 class Mi6Patcher(LeqiPaddingSpeedPatcher):
     FIRMWARE_SIZE = 0xA800
 

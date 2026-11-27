@@ -23,6 +23,7 @@ from typing import Optional, Tuple
 from bwpatcher.core import CorePatcher
 
 
+# Arch / ISA: Nations N32G (LEQI) · Cortex-M3 · ARMv7-M · Thumb-2 OK (movw/movt/UDIV).
 class CoreN32Patcher(CorePatcher):
     """
     Patcher for N32 (Leqi) controllers with XOR encryption and CRC validation.
