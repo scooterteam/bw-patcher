@@ -25,6 +25,7 @@ from bwpatcher.core import CorePatcher
 from bwpatcher.utils import find_pattern, SignatureException
 
 
+# Arch / ISA: Linko LKS32 (MC07x / MC08x family) · Cortex-M0 · ARMv6-M · Thumb-1 only.
 class LKS32Patcher(CorePatcher):
     def __init__(self, data):
         super().__init__(data)

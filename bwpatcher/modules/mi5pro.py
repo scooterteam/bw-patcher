@@ -22,6 +22,7 @@ from bwpatcher.core_es32 import ES32Patcher
 from bwpatcher.utils import find_pattern, extract_ldr_offset, offset_to_nearest_word, SignatureException
 
 
+# Arch / ISA: Brightway ES32-class · Cortex-M0 · ARMv6-M · Thumb-1 only (no movw).
 class Mi5proPatcher(ES32Patcher):
     SIG_MODES = [ None, 0x49, 0x09, 0x88, None, 0xe7, 0x01, 0x88, None, 0xe7 ]
 

@@ -14,6 +14,7 @@ from bwpatcher.core_n32 import CoreN32Patcher
 from bwpatcher.utils import find_pattern, SignatureException
 
 
+# Arch / ISA: Nations N32G (LEQI) · Cortex-M3 · ARMv7-M · Thumb-2 OK (movw/movt).
 class LeqiSpeedPatcher(CoreN32Patcher):
     MODE_PEDESTRIAN = 1
     MODE_DRIVE = 2

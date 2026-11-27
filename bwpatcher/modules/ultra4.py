@@ -26,6 +26,7 @@ CURRENT_PER_SPEED = 3
 CURRENT_SOFT_CAP = 1000
 
 
+# Arch / ISA: Linko LKS32 · Cortex-M0 · ARMv6-M · Thumb-1 only (no movw).
 class Ultra4Patcher(LKS32Patcher):
     def __init__(self, data):
         super().__init__(data)

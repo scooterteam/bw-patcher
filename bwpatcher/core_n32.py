@@ -23,6 +23,7 @@ from typing import Optional, Tuple
 from bwpatcher.core import CorePatcher
 
 
+# Arch / ISA: Nations N32G (LEQI) · Cortex-M3 · ARMv7-M · Thumb-2 OK (movw/movt/UDIV).
 class CoreN32Patcher(CorePatcher):
     """
     Patcher for N32 (Leqi) controllers with XOR encryption and CRC validation.
@@ -40,8 +41,7 @@ class CoreN32Patcher(CorePatcher):
     # Full-image header layout: an "EU1\x00" ASCII tag is followed immediately by a
     # little-endian uint16 giving the exact size of the encrypted firmware body that
     # starts at FIRMWARE_OFFSET. This size varies per firmware/model, so it must be
-    # read from the header rather than assumed to be a fixed per-model constant - see
-    # docs/20-dynamic-firmware-size-detection.md for how this was discovered/verified.
+    # read from the header rather than assumed to be a fixed per-model constant.
     HEADER_TAG = b'EU1\x00'
     HEADER_TAG_OFFSET = 0x0A
     HEADER_SIZE_FIELD_OFFSET = 0x0E
@@ -413,8 +413,7 @@ class CoreN32Patcher(CorePatcher):
         parse_header_firmware_size), falling back to the legacy fixed-size window
         (FIRMWARE_SIZE) only when the header can't be read. This avoids the bug where
         a per-model FIRMWARE_SIZE constant that's even slightly wrong silently pulls
-        in bytes from beyond the real firmware body (see
-        docs/20-dynamic-firmware-size-detection.md).
+        in bytes from beyond the real firmware body.
 
         Args:
             full_image_data: Full image data

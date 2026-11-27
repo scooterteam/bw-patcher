@@ -55,6 +55,7 @@ def is_patch_experimental(patcher, patch_code: str) -> bool:
 
 patch_map = {
     "rsls": lambda patcher: patcher.remove_speed_limit_sport,
+    "rsob": lambda patcher: patcher.remove_soft_overspeed_brake,
     "dms": lambda patcher: patcher.dashboard_max_speed,
     "slp": lambda patcher: patcher.speed_limit_ped,
     "sld": lambda patcher: patcher.speed_limit_drive,
@@ -69,6 +70,7 @@ patch_map = {
 
 PATCH_METHOD_NAMES = {
     "rsls": "remove_speed_limit_sport",
+    "rsob": "remove_soft_overspeed_brake",
     "dms": "dashboard_max_speed",
     "slp": "speed_limit_ped",
     "sld": "speed_limit_drive",

@@ -292,13 +292,22 @@ if uploaded_file is not None:
         detected_model = detection.best
         scooter_model = detected_model
 
+fulldump_detected = detection is not None and detection.container == "fulldump"
+upload_token = (
+    (uploaded_file.name, uploaded_file.size) if uploaded_file is not None else None
+)
+if st.session_state.get("_upload_token") != upload_token:
+    st.session_state["_upload_token"] = upload_token
+    st.session_state["full_dump"] = fulldump_detected
+
 advanced_mode = st.checkbox(
     "Full dump",
+    key="full_dump",
     help="Patch a full memory dump, not DFU firmware.",
 )
 
 if uploaded_file is None:
-    st.caption("Upload firmware to detect the scooter model from the header.")
+    st.caption("Upload firmware to detect the scooter model (OTA header or fulldump ID).")
 elif scooter_model:
     display_name = MODEL_DISPLAY.get(scooter_model, scooter_model)
     bits = [display_name]
@@ -352,15 +361,31 @@ def _patch_allowed(patch_code: str) -> bool:
 st.markdown('<p class="bw-section">Speed limits</p>', unsafe_allow_html=True)
 
 patches = []
-n_speed = 3 if scooter_model in LEQI_MODELS else 2
+if scooter_model == "mi6ultra":
+    n_speed = 1
+elif scooter_model in LEQI_MODELS:
+    n_speed = 3
+else:
+    n_speed = 2
 speed_cols = st.columns(n_speed)
 
 with speed_cols[0]:
     sls_ok = _patch_allowed("sls")
+    sls_label = (
+        "Top speed (SLS)"
+        if scooter_model == "mi6ultra"
+        else "Sport (SLS)"
+    )
+    sls_help = (
+        "Raises the ESC speed limit used by Sport/Boost. "
+        "Drive mode can still be capped by the dash MAX (~25 km/h)."
+        if scooter_model == "mi6ultra" and sls_ok
+        else (None if sls_ok else "Experimental on this model — enable with ?experimental=1")
+    )
     enable_sls = st.checkbox(
-        _exp_label("Sport (SLS)", "sls"),
+        _exp_label(sls_label, "sls"),
         disabled=not sls_ok,
-        help=None if sls_ok else "Experimental on this model — enable with ?experimental=1",
+        help=sls_help,
     )
     sls_speed = st.slider(
         "SLS km/h", 1.0, 35.0, 25.0, 0.1, disabled=not enable_sls, key="sls_val"
@@ -368,18 +393,19 @@ with speed_cols[0]:
     if enable_sls and sls_ok:
         patches.append(f"sls={sls_speed}")
 
-with speed_cols[1]:
-    sld_ok = _patch_allowed("sld")
-    enable_sld = st.checkbox(
-        _exp_label("Drive (SLD)", "sld"),
-        disabled=not sld_ok,
-        help=None if sld_ok else "Experimental on this model — enable with ?experimental=1",
-    )
-    sld_speed = st.slider(
-        "SLD km/h", 1.0, 35.0, 15.0, 0.1, disabled=not enable_sld, key="sld_val"
-    )
-    if enable_sld and sld_ok:
-        patches.append(f"sld={sld_speed}")
+if scooter_model != "mi6ultra":
+    with speed_cols[1]:
+        sld_ok = _patch_allowed("sld")
+        enable_sld = st.checkbox(
+            _exp_label("Drive (SLD)", "sld"),
+            disabled=not sld_ok,
+            help=None if sld_ok else "Experimental on this model — enable with ?experimental=1",
+        )
+        sld_speed = st.slider(
+            "SLD km/h", 1.0, 35.0, 15.0, 0.1, disabled=not enable_sld, key="sld_val"
+        )
+        if enable_sld and sld_ok:
+            patches.append(f"sld={sld_speed}")
 
 if scooter_model in LEQI_MODELS:
     with speed_cols[2]:
@@ -408,7 +434,7 @@ with opt_a:
         if enable_dms:
             patches.append(f"dms={dms_speed}")
 
-    if scooter_model not in ["mi4pro2nd", "mi5pro", *LEQI_MODELS]:
+    if scooter_model not in ["mi4pro2nd", "mi5pro", "mi6ultra", *LEQI_MODELS]:
         enable_fdv = st.checkbox("Fake firmware version (FDV)")
         fdv_version = st.text_input(
             "Version (4 digits)",
@@ -421,7 +447,7 @@ with opt_a:
             patches.append(f"fdv={fdv_version}")
 
 with opt_b:
-    if scooter_model not in LEQI_MODELS:
+    if scooter_model not in [*LEQI_MODELS, "mi6ultra"]:
         if st.checkbox("Cruise control (CCE)"):
             patches.append("cce")
 
@@ -437,6 +463,17 @@ with opt_b:
         )
         if enable_mss and mss_ok:
             patches.append(f"mss={mss_speed}")
+
+    if scooter_model == "mi6ultra":
+        if st.checkbox(
+            "No downhill overspeed brake (RSOB)",
+            help=(
+                "Stops the soft auto-brake that builds when you coast above the "
+                "speed limit (e.g. downhill). Same skip as region 71942; does not "
+                "remove normal KERS or the throttle speed cap."
+            ),
+        ):
+            patches.append("rsob")
 
 status_bits = []
 if uploaded_file:

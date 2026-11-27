@@ -67,6 +67,9 @@ class CorePatcher():
     def remove_speed_limit_sport(self):
         raise NotImplementedError()
 
+    def remove_soft_overspeed_brake(self):
+        raise NotImplementedError()
+
     def region_free(self):
         raise NotImplementedError()
 
