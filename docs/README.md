@@ -1,10 +1,5 @@
-# Brightway RE docs (moved)
+# Docs
 
-Canonical docs: [`../../../docs/brightway/`](../../../docs/brightway/)
+Model detection: `python -m bwpatcher detect` · package `bwpatcher.detect` · `scripts/detect_model.py`
 
-Header / model ID:
-- [LEQI header](../../../docs/brightway/15-leqi-header-format.md)
-- [Brightway packaged header](../../../docs/brightway/22-brightway-packaged-header.md)
-- [Header-based model detection](../../../docs/brightway/23-header-model-detection.md)
-
-Detector (OTA header + fulldump stamps): `python -m bwpatcher detect` · package `bwpatcher.detect` · `scripts/detect_model.py`
+Supports OTA headers (LEQI / Brightway packaged / type-2) and fulldump body stamps (`FULLDUMP_IDS`).

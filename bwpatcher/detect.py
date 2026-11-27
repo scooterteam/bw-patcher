@@ -64,11 +64,9 @@ BW_ID_PREFIX4 = {
     "0016": "mi5max",
 }
 
-# Unique ASCII stamps past the OTA header window — fulldump / raw flash only.
-# Documented IDs: docs/scooters/*/fulldump.md, docs/reference/model_manufacturers.md.
-# Only wire models here once the stamp is confirmed unique; leave others for later.
+# Fulldump body stamps (past [0x00, 0x80)).
 FULLDUMP_IDS = {
-    b"LKS071BT0006": "mi6ultra",  # docs/scooters/6ultra/fulldump.md @ 0xbf44 / 0x18748
+    b"LKS071BT0006": "mi6ultra",
 }
 
 FULLDUMP_ONLY_MODELS = frozenset(FULLDUMP_IDS.values())
